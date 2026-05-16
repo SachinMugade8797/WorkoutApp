@@ -1,0 +1,64 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configurations and tasks for VS Code
+# This folder should be checked into source control
+# .vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+
+# Android related
+**/android/app/src/main/res/values/strings.xml
+**/android/key.properties
+**/android/local.properties
+**/android/WorkoutApp_android.iml
+**/android/.gradle/
+**/android/build/
+**/android/gradle/
+**/android/gradlew
+**/android/gradlew.bat
+
+# iOS related
+**/ios/Runner/GeneratedPluginRegistrant.[mh]
+**/ios/Runner/GeneratedPluginRegistrant.swift
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/DerivedData/
+**/ios/.generated/
+**/ios/.pods/
+**/ios/.symlinks/
+**/ios/Pods/
+**/ios/Podfile.lock
+
+# Symbolication logging
+/symbols/
+
+# Coverage to ignore
+coverage/
