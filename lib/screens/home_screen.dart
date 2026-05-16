@@ -60,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _handlePersonalizedPlanClick(BuildContext context) async {
     final plan = await StorageService.getPlan();
+    if (!mounted) return;
     if (plan == null) {
       await Navigator.push(
         context,
@@ -353,6 +354,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (refresh == true) _refreshData();
                   }
                 } else {
+                  if (!mounted) return;
                   final refresh = await Navigator.push(
                     context,
                     MaterialPageRoute(
