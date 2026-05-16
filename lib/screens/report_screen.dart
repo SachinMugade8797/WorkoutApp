@@ -9,15 +9,23 @@ class ReportScreen extends StatefulWidget {
   State<ReportScreen> createState() => _ReportScreenState();
 }
 
-class _ReportScreenState extends State<ReportScreen> {
+class _ReportScreenState extends State<ReportScreen> with RouteAware {
   int totalCalories = 0;
   int totalMinutes = 0;
   int streak = 0;
   List<String> completedDates = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _loadStats();
+  }
+
+  // Reload data whenever dependencies change or when returning to this screen
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     _loadStats();
   }
 
@@ -33,6 +41,7 @@ class _ReportScreenState extends State<ReportScreen> {
         totalMinutes = mins;
         streak = st;
         completedDates = dates;
+        _isLoading = false;
       });
     }
   }
@@ -42,11 +51,19 @@ class _ReportScreenState extends State<ReportScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('MY PROGRESS'),
+        title: const Text('MY PROGRESS', style: TextStyle(fontWeight: FontWeight.w900)),
         backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadStats,
+          )
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _loadStats,
+        color: const Color(0xFF2563EB),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(20),
@@ -54,15 +71,25 @@ class _ReportScreenState extends State<ReportScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildSummaryCards(),
-              const SizedBox(height: 24),
-              const Text(
-                'Activity Calendar',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Activity Calendar',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                  ),
+                  Text(
+                    'Last 30 Days',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               _buildCalendar(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               _buildWeeklyChartStub(),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -111,11 +138,11 @@ class _ReportScreenState extends State<ReportScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -123,20 +150,27 @@ class _ReportScreenState extends State<ReportScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 24),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
           const SizedBox(height: 12),
           Text(
             value,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black),
           ),
           Text(
             unit,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
-            label,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey.shade400),
+            label.toUpperCase(),
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.grey.shade400, letterSpacing: 0.5),
           ),
         ],
       ),
@@ -145,38 +179,56 @@ class _ReportScreenState extends State<ReportScreen> {
 
   Widget _buildCalendar() {
     final now = DateTime.now();
-    final last30Days = List.generate(30, (i) => now.subtract(Duration(days: 29 - i)));
+    // Show last 30 days
+    final daysToDisplay = List.generate(30, (i) => now.subtract(Duration(days: 29 - i)));
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: last30Days.map((date) {
+        spacing: 10,
+        runSpacing: 10,
+        alignment: WrapAlignment.start,
+        children: daysToDisplay.map((date) {
           final dateStr = date.toIso8601String().split('T')[0];
           bool isCompleted = completedDates.contains(dateStr);
           bool isToday = dateStr == now.toIso8601String().split('T')[0];
 
-          return Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: isCompleted ? const Color(0xFF2563EB) : (isToday ? Colors.blue.shade50 : Colors.grey.shade100),
-              shape: BoxShape.circle,
-              border: isToday ? Border.all(color: const Color(0xFF2563EB), width: 1) : null,
-            ),
-            child: Center(
-              child: Text(
-                date.day.toString(),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: isCompleted ? Colors.white : (isToday ? const Color(0xFF2563EB) : Colors.black54),
-                ),
+          return Tooltip(
+            message: DateFormat('MMM d, yyyy').format(date),
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: isCompleted 
+                    ? const Color(0xFF2563EB) 
+                    : (isToday ? const Color(0xFF2563EB).withOpacity(0.1) : Colors.grey.shade50),
+                borderRadius: BorderRadius.circular(10),
+                border: isToday && !isCompleted 
+                    ? Border.all(color: const Color(0xFF2563EB), width: 1.5) 
+                    : null,
+              ),
+              child: Center(
+                child: isCompleted 
+                  ? const Icon(Icons.check, color: Colors.white, size: 16)
+                  : Text(
+                      date.day.toString(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isToday ? const Color(0xFF2563EB) : Colors.black38,
+                      ),
+                    ),
               ),
             ),
           );
@@ -186,42 +238,55 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   Widget _buildWeeklyChartStub() {
+    final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    // Mock data for visual weight
+    final heights = [0.4, 0.7, 0.3, 0.9, 0.5, 0.2, 0.1];
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Weekly Overview',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            'Activity Intensity',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
           ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day) {
-              // Simulated chart
-              double height = 20.0 + (day == 'W' || day == 'F' ? 40 : 10);
-              return Column(
-                children: [
-                  Container(
-                    width: 12,
-                    height: height,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2563EB),
-                      borderRadius: BorderRadius.circular(4),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 120,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(7, (index) {
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: 16,
+                      height: 80 * heights[index],
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(day, style: const TextStyle(color: Colors.white54, fontSize: 10)),
-                ],
-              );
-            }).toList(),
+                    const SizedBox(height: 12),
+                    Text(
+                      days[index],
+                      style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                );
+              }),
+            ),
           ),
         ],
       ),
