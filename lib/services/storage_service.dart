@@ -16,6 +16,9 @@ class StorageService {
   static const String _activeWorkoutIdsKey = 'active_workout_ids';
   static const String _isWorkoutActiveKey = 'is_workout_active';
   static const String _userLevelKey = 'user_level';
+  static const String _isMetricKey = 'settings_is_metric';
+  static const String _isDarkModeKey = 'settings_is_dark_mode';
+  static const String _isReminderOnKey = 'settings_is_reminder_on';
   static const String _dietProfileKey = 'diet_profile';
   static const String _weeklyDietPlanKey = 'weekly_diet_plan';
   static const String _waterIntakeKey = 'water_intake';
@@ -27,6 +30,12 @@ class StorageService {
     await prefs.setString(_userNameKey, name);
     await prefs.setString(_goalKey, goal);
     await prefs.setInt(_weeklyBurnKey, weeklyBurn);
+  }
+
+  static Future<void> saveUserProfile(String name, String goal) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userNameKey, name);
+    await prefs.setString(_goalKey, goal);
   }
 
   static Future<String?> getUserName() async {
@@ -190,6 +199,37 @@ class StorageService {
   static Future<void> resetAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+  }
+
+  // Settings Methods
+  static Future<void> saveMetricUnit(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_isMetricKey, value);
+  }
+
+  static Future<bool> getMetricUnit() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_isMetricKey) ?? true;
+  }
+
+  static Future<void> saveDarkMode(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_isDarkModeKey, value);
+  }
+
+  static Future<bool> getDarkMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_isDarkModeKey) ?? false;
+  }
+
+  static Future<void> saveReminder(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_isReminderOnKey, value);
+  }
+
+  static Future<bool> getReminder() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_isReminderOnKey) ?? true;
   }
 
   // Diet methods

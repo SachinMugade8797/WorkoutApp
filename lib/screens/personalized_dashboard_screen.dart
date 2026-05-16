@@ -46,6 +46,64 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
     });
   }
 
+  void _showDayDetails(String day, List<String> ids) {
+    final exercises = ids.map((id) => masterExerciseList.firstWhere(
+      (e) => e.id == id, 
+      orElse: () => masterExerciseList.first
+    )).toList();
+    
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25))
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('$day Workout', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text('${exercises.length} Exercises prioritized for your goal', style: TextStyle(color: Colors.grey.shade600)),
+            const SizedBox(height: 20),
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: exercises.length,
+                separatorBuilder: (context, index) => const Divider(),
+                itemBuilder: (context, index) {
+                  final ex = exercises[index];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2563EB).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.fitness_center, color: Color(0xFF2563EB)),
+                    ),
+                    title: Text(ex.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(ex.category),
+                    trailing: const Icon(Icons.chevron_right, size: 18),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -55,8 +113,7 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('$_userName\'s 7-Day $_userGoal Journey', 
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+        title: const Text('MY AI PLAN', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
@@ -75,6 +132,16 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              'Hello, $_userName! 👋',
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.black),
+            ),
+            Text(
+              'Ready to crush your $_userGoal goal today?',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 30),
+
             // Stats Row
             Row(
               children: [
@@ -96,6 +163,7 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
               ],
             ),
             const SizedBox(height: 15),
+            
             // Weekly Burn Card
             Container(
               width: double.infinity,
@@ -168,6 +236,7 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
     
     if (exerciseIds.isEmpty) {
       return Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(30),
         decoration: BoxDecoration(
           color: Colors.grey.shade100,
@@ -184,6 +253,13 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
       decoration: BoxDecoration(
         gradient: const LinearGradient(colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)]),
         borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2563EB).withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -262,9 +338,7 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
         title: Text(day, style: TextStyle(fontWeight: FontWeight.bold, color: isToday ? const Color(0xFF2563EB) : Colors.black)),
         subtitle: Text(ids.isEmpty ? 'Rest Day' : '${ids.length} exercises'),
         trailing: ids.isEmpty ? null : const Icon(Icons.chevron_right),
-        onTap: ids.isEmpty ? null : () {
-          // Could show a list of exercises or start the workout
-        },
+        onTap: ids.isEmpty ? null : () => _showDayDetails(day, ids),
       ),
     );
   }
