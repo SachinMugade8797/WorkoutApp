@@ -25,3 +25,5 @@ flutter:
   assets:
     - assets/gifs/    # <--- Add this line here
     - assets/images/
+    - assets/images/men.jpg
+    - assets/images/women.jpg
