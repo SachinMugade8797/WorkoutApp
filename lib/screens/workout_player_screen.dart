@@ -165,7 +165,6 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     final currentEx = _exercises[_currentIndex];
     final progress = (_currentIndex + 1) / _exercises.length;
     final gifPath = 'assets/gifs/${currentEx.id}.gif';
-    print('Attempting to load GIF: $gifPath');
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -212,7 +211,6 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
                             fit: BoxFit.contain,
                             gaplessPlayback: true,
                             errorBuilder: (context, error, stackTrace) {
-                              print('FAILED to load GIF at: $gifPath');
                               return const Center(
                                 child: Icon(Icons.fitness_center, size: 80, color: Colors.grey),
                               );
@@ -224,7 +222,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withOpacity(0.1),
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: Text(
@@ -274,7 +272,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
       child: Container(
-        color: const Color(0xFF2563EB).withOpacity(0.9),
+        color: const Color(0xFF2563EB).withValues(alpha: 0.9),
         width: double.infinity,
         height: double.infinity,
         child: Column(
@@ -315,7 +313,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
       child: Container(
-        color: Colors.black.withOpacity(0.5),
+        color: Colors.black.withValues(alpha: 0.5),
         width: double.infinity,
         height: double.infinity,
         child: Center(

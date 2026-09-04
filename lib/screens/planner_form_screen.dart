@@ -223,12 +223,14 @@ class _PlannerFormScreenState extends State<PlannerFormScreen> {
               width: 2,
             ),
           ),
-          child: RadioListTile<String>(
-            title: Text(option, style: const TextStyle(fontWeight: FontWeight.bold)),
-            value: option,
+          child: RadioGroup<String>(
             groupValue: currentVal,
             onChanged: onChanged,
-            activeColor: const Color(0xFF2563EB),
+            child: RadioListTile<String>(
+              title: Text(option, style: const TextStyle(fontWeight: FontWeight.bold)),
+              value: option,
+              activeColor: const Color(0xFF2563EB),
+            ),
           ),
         )),
       ],

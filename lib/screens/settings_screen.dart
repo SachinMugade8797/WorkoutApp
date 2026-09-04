@@ -72,7 +72,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Text('Your Goal', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: goals.contains(tempGoal) ? tempGoal : goals.first,
+                  initialValue: goals.contains(tempGoal) ? tempGoal : goals.first,
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.grey.shade100,
@@ -89,6 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ElevatedButton(
               onPressed: () async {
                 await StorageService.saveUserProfile(nameController.text, tempGoal);
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 _loadSettings();
               },
@@ -227,7 +228,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withOpacity(0.3),
+                    color: primaryColor.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -251,7 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         Text(
                           'Goal: $_userGoal',
-                          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
                         ),
                       ],
                     ),
@@ -276,7 +277,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           _buildSectionHeader('Preferences'),
           SwitchListTile(
-            activeColor: primaryColor,
+            activeThumbColor: primaryColor,
             secondary: const Icon(Icons.straighten, color: primaryColor),
             title: const Text('Metric Units (kg/cm)'),
             value: _isMetric,
@@ -286,7 +287,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           SwitchListTile(
-            activeColor: primaryColor,
+            activeThumbColor: primaryColor,
             secondary: const Icon(Icons.dark_mode_outlined, color: primaryColor),
             title: const Text('Dark Mode'),
             value: _isDarkMode,
@@ -296,7 +297,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           SwitchListTile(
-            activeColor: primaryColor,
+            activeThumbColor: primaryColor,
             secondary: const Icon(Icons.notifications_none, color: primaryColor),
             title: const Text('Workout Reminders'),
             value: _isReminderOn,
@@ -315,9 +316,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'This will clear your current AI-generated plan. You will need to create a new one.',
               () async {
                 await StorageService.clearPlan();
-                if (mounted) {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                }
+                if (!context.mounted) return;
+                Navigator.of(context).popUntil((route) => route.isFirst);
               },
             ),
           ),
@@ -328,8 +328,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Clear Progress?',
               'This will permanently delete your total calories, minutes, and streaks. This cannot be undone.',
               () async {
-                await StorageService.clearAllProgress();
+                StorageService.clearAllProgress();
                 _loadSettings();
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Progress data cleared')),
                 );

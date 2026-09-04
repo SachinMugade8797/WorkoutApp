@@ -85,7 +85,7 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB).withOpacity(0.1),
+                        color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(Icons.fitness_center, color: Color(0xFF2563EB)),
@@ -169,9 +169,9 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.green.withOpacity(0.2)),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
@@ -216,15 +216,15 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(val, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color)),
-          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color.withOpacity(0.7))),
+          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color.withValues(alpha: 0.7))),
         ],
       ),
     );
@@ -255,7 +255,7 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2563EB).withOpacity(0.3),
+            color: const Color(0xFF2563EB).withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -330,9 +330,9 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: isToday ? const Color(0xFF2563EB).withOpacity(0.05) : Colors.grey.shade50,
+        color: isToday ? const Color(0xFF2563EB).withValues(alpha: 0.05) : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(15),
-        border: isToday ? Border.all(color: const Color(0xFF2563EB).withOpacity(0.3)) : null,
+        border: isToday ? Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.3)) : null,
       ),
       child: ListTile(
         title: Text(day, style: TextStyle(fontWeight: FontWeight.bold, color: isToday ? const Color(0xFF2563EB) : Colors.black)),

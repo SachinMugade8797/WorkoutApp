@@ -69,18 +69,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _handlePersonalizedPlanClick(BuildContext context) async {
     final plan = await StorageService.getPlan();
-    if (!mounted) return;
-    if (plan == null) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const PlannerFormScreen()),
-      );
-    } else {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const PersonalizedDashboardScreen()),
-      );
-    }
+    if (!context.mounted) return;
+    final destination = plan == null
+        ? const PlannerFormScreen()
+        : const PersonalizedDashboardScreen();
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => destination),
+    );
     _refreshData();
   }
 
@@ -161,13 +157,13 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
       ),
       child: Column(
         children: [
@@ -204,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 35,
                 height: 35,
                 decoration: BoxDecoration(
-                  color: isCompleted ? const Color(0xFF2563EB) : (isToday ? Colors.blue.shade50 : Colors.grey.shade100),
+                    color: isCompleted ? const Color(0xFF2563EB) : (isToday ? Colors.blue.withValues(alpha: 0.05) : Colors.grey.shade100),
                   shape: BoxShape.circle,
                   border: isToday ? Border.all(color: const Color(0xFF2563EB), width: 1.5) : null,
                 ),
@@ -241,7 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(
-            colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+                  colors: [Colors.black.withValues(alpha: 0.8), Colors.transparent],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
@@ -298,8 +294,8 @@ class _HomeScreenState extends State<HomeScreen> {
       width: double.infinity,
       height: 220,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(25),
-        gradient: const LinearGradient(
+            borderRadius: BorderRadius.circular(25),
+            gradient: const LinearGradient(
           colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -312,21 +308,21 @@ class _HomeScreenState extends State<HomeScreen> {
             top: 0,
             bottom: 0,
             width: 160,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(topRight: Radius.circular(25), bottomRight: Radius.circular(25)),
-              child: Image.asset('assets/images/body_challenge.png', fit: BoxFit.cover, errorBuilder: (c, e, s) => const SizedBox()),
-            ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(topRight: Radius.circular(25), bottomRight: Radius.circular(25)),
+                    child: Image.asset('assets/images/body_challenge.png', fit: BoxFit.cover, errorBuilder: (c, e, s) => const SizedBox()),
+                  ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(25),
+          const Padding(
+            padding: EdgeInsets.all(25),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('FULL BODY 7x4\nCHALLENGE', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 10),
-                const Text('Start your journey to fitness', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                const Spacer(),
-                const Text('DAY 1', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
+                Text('FULL BODY 7x4\nCHALLENGE', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
+                SizedBox(height: 10),
+                Text('Start your journey to fitness', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Spacer(),
+                Text('DAY 1', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
               ],
             ),
           ),
@@ -339,12 +335,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (_hasMissedWorkout) {
                   final ids = await StorageService.getActiveWorkoutIds();
                   final index = await StorageService.getCurrentWorkoutIndex();
-                  if (mounted) {
-                    await Navigator.push(context, MaterialPageRoute(builder: (context) => WorkoutPlayerScreen(exerciseIds: ids, startIndex: index)));
-                    _refreshData();
-                  }
+                  if (!context.mounted) return;
+                  await Navigator.push(context, MaterialPageRoute(builder: (_) => WorkoutPlayerScreen(exerciseIds: ids, startIndex: index)));
+                  _refreshData();
                 } else {
-                  await Navigator.push(context, MaterialPageRoute(builder: (context) => const WorkoutGeneratorForm()));
+                  if (!context.mounted) return;
+                  await Navigator.push(context, MaterialPageRoute(builder: (_) => const WorkoutGeneratorForm()));
                   _refreshData();
                 }
               },

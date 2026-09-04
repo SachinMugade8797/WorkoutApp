@@ -14,8 +14,6 @@ class _ReportScreenState extends State<ReportScreen> with RouteAware {
   int totalMinutes = 0;
   int streak = 0;
   List<String> completedDates = [];
-  bool _isLoading = true;
-
   @override
   void initState() {
     super.initState();
@@ -41,7 +39,6 @@ class _ReportScreenState extends State<ReportScreen> with RouteAware {
         totalMinutes = mins;
         streak = st;
         completedDates = dates;
-        _isLoading = false;
       });
     }
   }
@@ -141,7 +138,7 @@ class _ReportScreenState extends State<ReportScreen> with RouteAware {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -153,7 +150,7 @@ class _ReportScreenState extends State<ReportScreen> with RouteAware {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 20),
@@ -189,7 +186,7 @@ class _ReportScreenState extends State<ReportScreen> with RouteAware {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -211,8 +208,8 @@ class _ReportScreenState extends State<ReportScreen> with RouteAware {
               height: 38,
               decoration: BoxDecoration(
                 color: isCompleted 
-                    ? const Color(0xFF2563EB) 
-                    : (isToday ? const Color(0xFF2563EB).withOpacity(0.1) : Colors.grey.shade50),
+                    ? const Color(0xFF2563EB)
+                    : (isToday ? const Color(0xFF2563EB).withValues(alpha: 0.1) : Colors.grey.shade50),
                 borderRadius: BorderRadius.circular(10),
                 border: isToday && !isCompleted 
                     ? Border.all(color: const Color(0xFF2563EB), width: 1.5) 

@@ -88,12 +88,11 @@ class _DietDashboardScreenState extends State<DietDashboardScreen> with SingleTi
               onPressed: () async {
                 Navigator.pop(context);
                 await StorageService.clearDietData();
-                if (mounted) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const MainNavigation()),
-                    (route) => false,
-                  );
-                }
+                if (!context.mounted) return;
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const MainNavigation()),
+                  (route) => false,
+                );
               },
               child: const Text('Reset', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
             ),
