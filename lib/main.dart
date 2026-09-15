@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'screens/onboarding/splash_screen.dart';  // NEW - SplashScreen import
 import 'screens/home_screen.dart';
 import 'screens/discover_screen.dart';
 import 'screens/report_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/diet/diet_planner_screen.dart';
-import 'screens/onboarding/onboarding.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Get prefs here so we know before app starts
-  final prefs = await SharedPreferences.getInstance();
-  final bool isOnboardingComplete = prefs.getBool('isOnboardingComplete') ?? false;
+  await SharedPreferences.getInstance();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -20,16 +18,16 @@ void main() async {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
-  runApp(WorkoutApp(isOnboardingComplete: isOnboardingComplete));
+  runApp(const WorkoutApp());
 }
 
 class WorkoutApp extends StatelessWidget {
-  final bool isOnboardingComplete;
-  const WorkoutApp({super.key, this.isOnboardingComplete = false});
+  const WorkoutApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Home Workout',
+      title: 'FitForge',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -52,21 +50,22 @@ class WorkoutApp extends StatelessWidget {
           iconTheme: IconThemeData(color: Colors.black),
         ),
       ),
-      // LOGIC: If not completed -> show onboarding, else -> MainNavigation
-      home: isOnboardingComplete ? const MainNavigation() : const OnboardingGenderScreen(),
+      home: const SplashScreen(),  // CHANGED: Now starts with SplashScreen
     );
   }
 }
 
-// ... keep your MainNavigation class exactly same as before ...
+// MainNavigation - NO CHANGES NEEDED HERE
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
+
   @override
   State<MainNavigation> createState() => _MainNavigationState();
 }
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
+
   final List<Widget> _screens = const [
     HomeScreen(),
     DiscoverScreen(),
@@ -74,14 +73,20 @@ class _MainNavigationState extends State<MainNavigation> {
     ReportScreen(),
     SettingsScreen(),
   ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
+          border: Border(
+            top: BorderSide(color: Colors.grey.shade200, width: 1),
+          ),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
@@ -94,11 +99,31 @@ class _MainNavigationState extends State<MainNavigation> {
           unselectedFontSize: 11,
           elevation: 0,
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.timer_outlined), activeIcon: Icon(Icons.timer), label: 'Training'),
-            BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), activeIcon: Icon(Icons.explore), label: 'Discover'),
-            BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu_outlined), activeIcon: Icon(Icons.restaurant_menu), label: 'Diet'),
-            BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Report'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Settings'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.timer_outlined),
+              activeIcon: Icon(Icons.timer),
+              label: 'Training',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.explore_outlined),
+              activeIcon: Icon(Icons.explore),
+              label: 'Discover',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.restaurant_menu_outlined),
+              activeIcon: Icon(Icons.restaurant_menu),
+              label: 'Diet',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart_outlined),
+              activeIcon: Icon(Icons.bar_chart),
+              label: 'Report',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Settings',
+            ),
           ],
         ),
       ),
