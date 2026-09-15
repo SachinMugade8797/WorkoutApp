@@ -104,39 +104,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildStatItem('$_streak', 'STREAK'),
-                  _buildStatItem('$_totalKcal', 'KCAL'),
-                  _buildStatItem('$_totalMinutes', 'MINUTES'),
-                ],
-              ),
-              const SizedBox(height: 30),
               _buildWeekGoalSection(),
-              const SizedBox(height: 30),
-              const Text(
-                'YOUR CHALLENGES',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 24),
+              _buildAIHeroCard(),
+              const SizedBox(height: 16),
+              _buildPostureTeaserCard(),
+              const SizedBox(height: 20),
+              _buildQuickStatsRow(),
+              const SizedBox(height: 20),
+              _buildWeekProgressStrip(),
+              const SizedBox(height: 24),
               _buildChallengeCard(context),
-              const SizedBox(height: 40),
-              Text(
-                _weeklyPlan == null ? 'AI RECOMMENDATION' : 'YOUR JOURNEY',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 15),
-              InkWell(
-                onTap: () => _handlePersonalizedPlanClick(context),
-                child: _buildBeginnerCard(),
-              ),
               const SizedBox(height: 20),
             ],
           ),
@@ -185,8 +163,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(7, (index) {
-              if (_weekDates.isEmpty)
+              if (_weekDates.isEmpty) {
                 return const SizedBox(width: 35, height: 35);
+              }
               DateTime date = _weekDates[index];
               String dateStr = date.toIso8601String().split('T')[0];
               bool isCompleted = _completedDates.contains(dateStr);
@@ -225,182 +204,341 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBeginnerCard() {
+  Widget _buildAIHeroCard() {
     String todayKey = _getTodayKey();
     List<String>? todayExercises = _weeklyPlan?[todayKey];
     bool hasPlan = _weeklyPlan != null;
+    bool isRestDay =
+        hasPlan && (todayExercises == null || todayExercises.isEmpty);
 
-    return Container(
-      width: double.infinity,
-      height: 160,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        image: const DecorationImage(
-          image: AssetImage('assets/images/Ai_planner.jpeg'),
-          fit: BoxFit.cover,
-        ),
-      ),
+    return InkWell(
+      onTap: () => _handlePersonalizedPlanClick(context),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        width: double.infinity,
+        height: 220,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            colors: [Colors.black.withValues(alpha: 0.8), Colors.transparent],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
+          borderRadius: BorderRadius.circular(24),
+          image: const DecorationImage(
+            image: AssetImage('assets/images/Ai_planner.jpeg'),
+            fit: BoxFit.cover,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2563EB),
-                borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              colors: [
+                Colors.black.withValues(alpha: 0.85),
+                Colors.black.withValues(alpha: 0.15),
+              ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  hasPlan ? 'ACTIVE PLAN' : 'AI GENERATED',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold),
+                ),
               ),
-              child: Text(
-                hasPlan ? 'ACTIVE PLAN' : 'AI GENERATED',
+              const SizedBox(height: 14),
+              Text(
+                hasPlan ? 'Today: $_userGoal' : 'Personalized AI Plan',
                 style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                hasPlan
+                    ? (isRestDay
+                        ? 'REST DAY'
+                        : '${todayExercises!.length} TARGETED EXERCISES')
+                    : 'CREATE YOUR AI PLAN',
+                style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              hasPlan ? 'Today: $_userGoal' : 'Personalized AI Plan',
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              hasPlan
-                  ? (todayExercises == null || todayExercises.isEmpty
-                      ? 'REST DAY'
-                      : '${todayExercises.length} TARGETED EXERCISES')
-                  : 'CREATE YOUR AI PLAN',
-              style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold),
-            ),
-            if (!hasPlan)
-              const Padding(
-                padding: EdgeInsets.only(top: 10),
-                child: Icon(Icons.arrow_forward_rounded,
-                    color: Colors.white, size: 20),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: hasPlan ? _startTodaysWorkout : _openPlannerForm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF2563EB),
+                    elevation: 0,
+                    minimumSize: const Size(0, 48),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text(
+                    hasPlan ? 'START WORKOUT' : 'CREATE PLAN',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w900, fontSize: 14),
+                  ),
+                ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _startTodaysWorkout() async {
+    final plan = _weeklyPlan;
+    if (plan == null) return;
+
+    List<String> ids = plan[_getTodayKey()] ?? [];
+    if (ids.isEmpty) {
+      // Rest day today — fall back to Monday's routine.
+      ids = plan['Mon'] ?? [];
+    }
+    if (ids.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content:
+                Text('No workout available yet. Create your AI plan first.')),
+      );
+      return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => WorkoutPlayerScreen(exerciseIds: ids)),
+    );
+    _refreshData();
+  }
+
+  void _openPlannerForm() {
+    Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const PlannerFormScreen()))
+        .then((_) => _refreshData());
+  }
+
+  Widget _buildPostureTeaserCard() {
+    return Material(
+      color: const Color(0xFFEDF2FF),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: _openPostureScore,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.camera_alt_outlined,
+                    color: Color(0xFF2563EB), size: 22),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Check Your Posture Score',
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w800)),
+                    SizedBox(height: 2),
+                    Text('See how your posture affects your workouts',
+                        style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openPostureScore() {
+    // Posture Score screen is not built yet — placeholder for later.
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Posture Score is coming soon!')),
+    );
+  }
+
+  Widget _buildWeekProgressStrip() {
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final thisWeekDates = List.generate(7, (i) {
+      final d = monday.add(Duration(days: i));
+      return d.toIso8601String().split('T')[0];
+    });
+    final completedThisWeek =
+        _completedDates.where((d) => thisWeekDates.contains(d)).length;
+    const goal = 6;
+    final progress = (completedThisWeek / goal).clamp(0.0, 1.0);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('WEEK PROGRESS',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+              Text('$completedThisWeek/$goal DONE',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF2563EB),
+                      fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: Colors.grey.shade100,
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStatsRow() {
+    return Row(
+      children: [
+        _buildStatItem('$_streak', 'STREAK'),
+        const SizedBox(width: 12),
+        _buildStatItem('$_totalKcal', 'KCAL'),
+        const SizedBox(width: 12),
+        _buildStatItem('$_totalMinutes', 'MIN'),
+      ],
+    );
+  }
+
+  Widget _buildStatItem(String value, String label) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Text(value,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 2),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.bold)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatItem(String value, String label) {
-    return Column(
-      children: [
-        Text(value,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-        Text(label,
-            style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
-
   Widget _buildChallengeCard(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: 220,
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(18),
         gradient: const LinearGradient(
           colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       ),
-      child: Stack(
+      child: Row(
         children: [
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: 160,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(25),
-                  bottomRight: Radius.circular(25)),
-              child: Image.asset('assets/images/body_challenge.png',
-                  fit: BoxFit.cover,
-                  errorBuilder: (c, e, s) => const SizedBox()),
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.all(25),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(' FULL BODY \nCHALLENGE',
+                const Text('FULL BODY 7x4',
                     style: TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
+                        fontSize: 16,
                         fontWeight: FontWeight.w900)),
-                SizedBox(height: 10),
+                const SizedBox(height: 4),
+                const Text('CHALLENGE',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
                 Text('Start your journey to fitness',
-                    style: TextStyle(color: Colors.white70, fontSize: 14)),
-                Spacer(),
-                Text('DAY 1',
                     style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900)),
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 11)),
               ],
             ),
           ),
-          Positioned(
-            bottom: 20,
-            left: 25,
-            width: 180,
-            child: ElevatedButton(
-              onPressed: () async {
-                if (_hasMissedWorkout) {
-                  final ids = await StorageService.getActiveWorkoutIds();
-                  final index = await StorageService.getCurrentWorkoutIndex();
-                  if (!context.mounted) return;
-                  await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => WorkoutPlayerScreen(
-                              exerciseIds: ids, startIndex: index)));
-                  _refreshData();
-                } else {
-                  if (!context.mounted) return;
-                  await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const WorkoutGeneratorForm()));
-                  _refreshData();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF2563EB),
-                elevation: 0,
-                minimumSize: const Size(0, 44),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(22)),
-              ),
-              child: Text(_hasMissedWorkout ? 'RESUME WORKOUT' : 'START',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w900, fontSize: 15)),
+          ElevatedButton(
+            onPressed: () async {
+              if (_hasMissedWorkout) {
+                final ids = await StorageService.getActiveWorkoutIds();
+                final index = await StorageService.getCurrentWorkoutIndex();
+                if (!context.mounted) return;
+                await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => WorkoutPlayerScreen(
+                            exerciseIds: ids, startIndex: index)));
+                _refreshData();
+              } else {
+                if (!context.mounted) return;
+                await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const WorkoutGeneratorForm()));
+                _refreshData();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF2563EB),
+              elevation: 0,
+              minimumSize: const Size(0, 42),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(21)),
             ),
+            child: Text(_hasMissedWorkout ? 'RESUME' : 'START',
+                style:
+                    const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
           ),
         ],
       ),
