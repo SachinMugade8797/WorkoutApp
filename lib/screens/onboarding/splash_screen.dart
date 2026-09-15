@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../onboarding/onboarding.dart';
+import '../../services/storage_service.dart';
 import '../../main.dart';
+import 'onboarding_flow_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -75,19 +75,19 @@ class _SplashScreenState extends State<SplashScreen>
     // WHY: Navigate after 3.5 seconds (enough time for animations)
     Timer(const Duration(milliseconds: 3500), () async {
       if (!mounted) return;
-      
-      // Check if user already completed onboarding
-      final prefs = await SharedPreferences.getInstance();
-      final isOnboardingComplete = prefs.getBool('isOnboardingComplete') ?? false;
-      
+
+      // Check if user already completed onboarding.
+      // Falls back to the legacy 'isOnboardingComplete' key if present.
+      final isOnboardingComplete = await StorageService.getOnboardingComplete();
+
       if (!mounted) return;
-      
+
       // Navigate to appropriate screen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => isOnboardingComplete
               ? const MainNavigation()  // Go to home
-              : const OnboardingGenderScreen(), // Show onboarding
+              : const OnboardingFlowScreen(), // Show onboarding
         ),
       );
     });

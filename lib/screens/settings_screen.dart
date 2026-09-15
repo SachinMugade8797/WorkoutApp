@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../repositories/user_profile_repository.dart';
 import '../services/storage_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -13,6 +14,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _userGoal = 'Fitness';
   bool _isMetric = true;
   bool _isReminderOn = true;
+  bool _isGDriveBackup = false;
+  bool _isSubscribed = false;
   bool _isLoading = true;
 
   @override
@@ -27,6 +30,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final goal = await StorageService.getUserGoal();
     final metric = await StorageService.getMetricUnit();
     final reminder = await StorageService.getReminder();
+    final gDrive = await StorageService.getGoogleDriveBackup();
+    final subscribed = await StorageService.isSubscribed();
 
     if (mounted) {
       setState(() {
@@ -34,6 +39,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _userGoal = goal ?? 'Fitness';
         _isMetric = metric;
         _isReminderOn = reminder;
+        _isGDriveBackup = gDrive;
+        _isSubscribed = subscribed;
         _isLoading = false;
       });
     }
@@ -199,6 +206,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _onToggleGDriveBackup(bool value) async {
+    setState(() => _isGDriveBackup = value);
+    await StorageService.setGoogleDriveBackup(value);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Google Drive backup coming soon. Your data stays on this device for now.')),
+    );
+  }
+
+  void _onCloudSyncTap() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Cloud Sync is a Pro feature — coming soon.')),
+    );
+  }
+
+  void _showManageMyDataDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Manage My Data', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Delete all locally stored data: your profile, workout plan, progress, streaks and diet data. This cannot be undone.',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await UserProfileRepository.deleteProfile();
+              await StorageService.clearAllUserData();
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('All your data has been deleted')),
+              );
+              _loadSettings();
+            },
+            child: const Text('DELETE', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF2563EB);
@@ -294,6 +345,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
 
+          _buildSectionHeader('Backup & Cloud Sync'),
+          SwitchListTile(
+            activeThumbColor: primaryColor,
+            secondary: const Icon(Icons.cloud_outlined, color: primaryColor),
+            title: const Text('Backup to Google Drive'),
+            subtitle: const Text('Keep a copy of your plan and progress'),
+            value: _isGDriveBackup,
+            onChanged: _onToggleGDriveBackup,
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_sync_outlined, color: primaryColor),
+            title: const Text('Cloud Sync'),
+            subtitle: const Text('Back up your data and sync across devices'),
+            trailing: _isSubscribed
+                ? const Icon(Icons.check_circle, color: primaryColor, size: 20)
+                : Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lock_outline, color: primaryColor, size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          'PRO',
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+            onTap: _isSubscribed ? null : _onCloudSyncTap,
+          ),
+
           _buildSectionHeader('Data Management'),
           ListTile(
             leading: const Icon(Icons.restart_alt, color: Colors.red),
@@ -323,6 +415,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               },
             ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.admin_panel_settings_outlined, color: Colors.red),
+            title: const Text('Manage My Data', style: TextStyle(color: Colors.red)),
+            subtitle: const Text('Delete profile, plan, progress and diet data'),
+            onTap: _showManageMyDataDialog,
           ),
 
           _buildSectionHeader('Support'),

@@ -23,6 +23,9 @@ class StorageService {
   static const String _weeklyDietPlanKey = 'weekly_diet_plan';
   static const String _waterIntakeKey = 'water_intake';
   static const String _waterGoalKey = 'water_goal';
+  static const String _onboardingCompleteKey = 'hasCompletedOnboarding';
+  static const String _gDriveBackupKey = 'settings_google_drive_backup';
+  static const String _subscriptionKey = 'subscription_active';
 
   static Future<void> savePlan(Map<String, List<String>> plan, String name, String goal, int weeklyBurn) async {
     final prefs = await SharedPreferences.getInstance();
@@ -283,5 +286,52 @@ class StorageService {
     await prefs.remove(_weeklyDietPlanKey);
     await prefs.remove(_waterIntakeKey);
     await prefs.remove(_waterGoalKey);
+  }
+
+  // Onboarding flag
+  static Future<bool> getOnboardingComplete() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Fall back to the legacy key used by the old single-screen onboarding,
+    // so users who already onboarded don't get asked again.
+    return prefs.getBool(_onboardingCompleteKey) ??
+        prefs.getBool('isOnboardingComplete') ??
+        false;
+  }
+
+  static Future<void> setOnboardingComplete(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_onboardingCompleteKey, value);
+  }
+
+  // Backup to Google Drive (free tier) — value is persisted, integration is a stub
+  static Future<bool> getGoogleDriveBackup() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_gDriveBackupKey) ?? false;
+  }
+
+  static Future<void> setGoogleDriveBackup(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_gDriveBackupKey, value);
+  }
+
+  // Cloud Sync subscription check.
+  // STUB: Always returns false until real billing/entitlement logic is added.
+  static Future<bool> isSubscribed() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_subscriptionKey) ?? false;
+  }
+
+  static Future<void> setSubscribed(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_subscriptionKey, value);
+  }
+
+  // Clears every piece of locally stored user data (profile lives in the DB
+  // and is cleared separately by UserProfileRepository.deleteProfile()).
+  static Future<void> clearAllUserData() async {
+    await clearAllProgress();
+    await clearPlan();
+    await clearDietData();
+    await clearMissedExercises();
   }
 }

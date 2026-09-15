@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:math';
-import '../services/workout_generator_service.dart';
+
+import '../models/user_profile.dart';
+import '../repositories/user_profile_repository.dart';
 import '../services/storage_service.dart';
+import '../services/workout_generator_service.dart';
 import 'personalized_dashboard_screen.dart';
+
+/// Order that planner steps appear in. Steps are built dynamically from
+/// whatever the profile is still missing, so the planner only asks about
+/// things onboarding didn't cover (plus the focus-area question).
+enum _PlannerStep { name, goal, experienceLevel, equipment, timePerSession, injuries, focusArea }
 
 class PlannerFormScreen extends StatefulWidget {
   const PlannerFormScreen({super.key});
@@ -13,7 +20,15 @@ class PlannerFormScreen extends StatefulWidget {
 }
 
 class _PlannerFormScreenState extends State<PlannerFormScreen> {
+  // ---- Dynamic steps ----
+  late List<_PlannerStep> _steps = [];
   int _currentStep = 0;
+
+  // Working copy of the profile, seeded from the DB at load and updated as
+  // each answered step is persisted (partial progress survives leaving early).
+  UserProfile _workingProfile = const UserProfile();
+
+  // ---- Form values ----
   final TextEditingController _nameController = TextEditingController();
   String _goal = 'Build Muscle';
   String _level = 'Beginner';
@@ -21,22 +36,31 @@ class _PlannerFormScreenState extends State<PlannerFormScreen> {
   String _focusArea = 'Full Body';
   String _injury = 'None';
   String _timePerSession = '30 mins';
+
+  // ---- Loading / generating ----
+  bool _isLoading = true;
   bool _isGenerating = false;
-  String _loadingMessage = 'Analyzing your fitness profile...';
+  String _loadingMessage = '';
 
-  final List<String> _goals = ['Build Muscle', 'Lose Weight', 'Get Fit', 'Increase Flexibility'];
-  final List<String> _levels = ['Beginner', 'Intermediate', 'Advanced'];
-  final List<String> _equipments = ['None', 'Dumbbells Only', 'Full Gym'];
-  final List<String> _focusAreas = ['Chest & Arms', 'Legs & Glutes', 'Core & Abs', 'Full Body'];
-  final List<String> _injuries = ['None', 'Knee Pain', 'Back Pain'];
-  final List<String> _times = ['15 mins', '30 mins', '45 mins'];
+  static const List<String> _goals = ['Build Muscle', 'Lose Weight', 'Get Fit', 'Increase Flexibility'];
+  static const List<String> _levels = ['Beginner', 'Intermediate', 'Advanced'];
+  static const List<String> _equipments = ['None', 'Dumbbells Only', 'Full Gym'];
+  static const List<String> _focusAreas = ['Chest & Arms', 'Legs & Glutes', 'Core & Abs', 'Full Body'];
+  static const List<String> _injuries = ['None', 'Knee Pain', 'Back Pain'];
+  static const List<String> _times = ['15 mins', '30 mins', '45 mins'];
 
-  final List<String> _loadingMessages = [
-    "Analyzing your fitness profile...",
-    "Filtering 25+ exercises for your Focus Area...",
-    "Adjusting for injury limitations...",
-    "Calculating estimated calorie burn...",
+  // Honest, non-AI-claiming loading copy.
+  static const List<String> _buildingMessages = [
+    'Building your personalized plan...',
+    'Putting together your weekly routine...',
+    'Balancing training and rest days...',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileAndSteps();
+  }
 
   @override
   void dispose() {
@@ -44,50 +68,99 @@ class _PlannerFormScreenState extends State<PlannerFormScreen> {
     super.dispose();
   }
 
-  Future<void> _generatePlan() async {
-    if (_nameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your name')),
-      );
-      return;
-    }
+  /// Builds the step list from the profile's missing fields. If nothing is
+  /// missing the planner skips straight to generation.
+  Future<void> _loadProfileAndSteps() async {
+    final profile = await UserProfileRepository.getProfile() ?? const UserProfile();
+    final missing = await UserProfileRepository.getMissingFields();
 
-    setState(() => _isGenerating = true);
-    
-    // Start rotating messages
-    int messageIndex = 0;
-    Timer messageTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      if (mounted) {
-        setState(() {
-          messageIndex = (messageIndex + 1) % _loadingMessages.length;
-          _loadingMessage = _loadingMessages[messageIndex];
-        });
+    final steps = <_PlannerStep>[];
+    if (missing.contains('name')) steps.add(_PlannerStep.name);
+    if (missing.contains('goal')) steps.add(_PlannerStep.goal);
+    if (missing.contains('experienceLevel')) steps.add(_PlannerStep.experienceLevel);
+    if (missing.contains('equipment')) steps.add(_PlannerStep.equipment);
+    if (missing.contains('timePerSession')) steps.add(_PlannerStep.timePerSession);
+    if (missing.contains('injuries')) steps.add(_PlannerStep.injuries);
+    if (steps.isNotEmpty) steps.add(_PlannerStep.focusArea);
+
+    if (!mounted) return;
+    setState(() {
+      _workingProfile = profile;
+      _steps = steps;
+      _currentStep = 0;
+      _nameController.text = profile.name ?? '';
+
+      // Pre-seed single-select defaults from whatever the profile already has.
+      if (profile.goal != null && _goals.contains(profile.goal)) _goal = profile.goal!;
+      if (profile.experienceLevel != null && _levels.contains(profile.experienceLevel)) {
+        _level = profile.experienceLevel!;
       }
+      if (profile.equipment != null && _equipments.contains(profile.equipment)) {
+        _equipment = profile.equipment!;
+      }
+      if (profile.timePerSession != null && _times.contains(profile.timePerSession)) {
+        _timePerSession = profile.timePerSession!;
+      }
+      _injury = _injuryFromProfile(profile);
+      _isLoading = false;
     });
 
-    // Random duration between 3 and 8 seconds
-    int delay = 3 + Random().nextInt(6);
-    await Future.delayed(Duration(seconds: delay));
+    // No questions needed — go straight to generation.
+    if (steps.isEmpty) {
+      _generatePlan();
+    }
+  }
+
+  String _injuryFromProfile(UserProfile profile) {
+    final injuries = profile.injuries;
+    if (injuries == null) return 'None';
+    return injuries.isEmpty ? 'None' : injuries.first;
+  }
+
+  // --------------------------------------------------------------------------
+  // Plan generation
+  // --------------------------------------------------------------------------
+
+  Future<void> _generatePlan() async {
+    setState(() => _isGenerating = true);
+    _loadingMessage = _buildingMessages.first;
+
+    // Rotate honest copy through the (short) delay.
+    int messageIndex = 0;
+    final messageTimer = Timer.periodic(const Duration(milliseconds: 400), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        messageIndex = (messageIndex + 1) % _buildingMessages.length;
+        _loadingMessage = _buildingMessages[messageIndex];
+      });
+    });
+
+    // Keep load times short — the plan itself is generated locally.
+    await Future.delayed(const Duration(milliseconds: 1200));
+    messageTimer.cancel();
 
     try {
       final result = await WorkoutGeneratorService.generate7DayPlan(
-        name: _nameController.text,
-        goal: _goal,
-        level: _level,
-        equipment: _equipment,
+        name: _workingProfile.name ?? _nameController.text.trim(),
+        goal: _workingProfile.goal ?? _goal,
+        level: _workingProfile.experienceLevel ?? _level,
+        equipment: _workingProfile.equipment ?? _equipment,
         focusArea: _focusArea,
-        injury: _injury,
-        timePerSession: _timePerSession,
+        injury: _workingProfile.injuries == null
+            ? _injury
+            : (_workingProfile.injuries!.isEmpty ? 'None' : _workingProfile.injuries!.first),
+        timePerSession: _workingProfile.timePerSession ?? _timePerSession,
       );
 
       await StorageService.savePlan(
         Map<String, List<String>>.from(result['plan']),
         result['userName'],
-        _goal,
+        result['goal'],
         result['totalBurn'],
       );
-
-      messageTimer.cancel();
 
       if (mounted) {
         Navigator.pushReplacement(
@@ -96,16 +169,95 @@ class _PlannerFormScreenState extends State<PlannerFormScreen> {
         );
       }
     } catch (e) {
-      messageTimer.cancel();
       if (mounted) {
+        setState(() => _isGenerating = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isGenerating = false);
     }
   }
+
+  // --------------------------------------------------------------------------
+  // Step helpers
+  // --------------------------------------------------------------------------
+
+  _PlannerStep get _currentPlannerStep => _steps[_currentStep];
+
+  bool get _isLastStep => _currentStep == _steps.length - 1;
+
+  bool get _currentStepValid {
+    switch (_currentPlannerStep) {
+      case _PlannerStep.name:
+        return _nameController.text.trim().isNotEmpty;
+      default:
+        return true; // single-select steps always have a valid default
+    }
+  }
+
+  /// Persists the current step's answer to the DB + working profile so
+  /// partial progress survives, then advances (or generates on the last step).
+  Future<void> _handleNext() async {
+    if (!_currentStepValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your name')),
+      );
+      return;
+    }
+
+    await _saveCurrentStep();
+    if (!mounted) return;
+
+    if (_isLastStep) {
+      _generatePlan();
+    } else {
+      setState(() => _currentStep++);
+    }
+  }
+
+  Future<void> _saveCurrentStep() async {
+    switch (_currentPlannerStep) {
+      case _PlannerStep.name:
+        final name = _nameController.text.trim();
+        if (name.isNotEmpty) {
+          await UserProfileRepository.updateField('name', name);
+          _workingProfile = _workingProfile.copyWith(name: name);
+        }
+        break;
+      case _PlannerStep.goal:
+        await UserProfileRepository.updateField('goal', _goal);
+        _workingProfile = _workingProfile.copyWith(goal: _goal);
+        break;
+      case _PlannerStep.experienceLevel:
+        await UserProfileRepository.updateField('experienceLevel', _level);
+        _workingProfile = _workingProfile.copyWith(experienceLevel: _level);
+        break;
+      case _PlannerStep.equipment:
+        await UserProfileRepository.updateField('equipment', _equipment);
+        _workingProfile = _workingProfile.copyWith(equipment: _equipment);
+        break;
+      case _PlannerStep.timePerSession:
+        await UserProfileRepository.updateField('timePerSession', _timePerSession);
+        _workingProfile = _workingProfile.copyWith(timePerSession: _timePerSession);
+        break;
+      case _PlannerStep.injuries:
+        await UserProfileRepository.updateField(
+          'injuries',
+          _injury == 'None' ? <String>[] : <String>[_injury],
+        );
+        _workingProfile = _workingProfile.copyWith(
+          injuries: _injury == 'None' ? <String>[] : <String>[_injury],
+        );
+        break;
+      case _PlannerStep.focusArea:
+        // Maybe persisted to preferences in future — not a profile field.
+        break;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // UI
+  // --------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -117,26 +269,28 @@ class _PlannerFormScreenState extends State<PlannerFormScreen> {
         elevation: 0,
         foregroundColor: Colors.black,
       ),
-      body: _isGenerating 
-        ? _buildLoadingState()
-        : Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                LinearProgressIndicator(
-                  value: (_currentStep + 1) / 7,
-                  backgroundColor: Colors.grey.shade100,
-                  color: const Color(0xFF2563EB),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)))
+          : _isGenerating
+              ? _buildLoadingState()
+              : Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      LinearProgressIndicator(
+                        value: (_currentStep + 1) / _steps.length,
+                        backgroundColor: Colors.grey.shade100,
+                        color: const Color(0xFF2563EB),
+                      ),
+                      const SizedBox(height: 40),
+                      Expanded(
+                        child: SingleChildScrollView(child: _buildStepContent()),
+                      ),
+                      _buildNavigationButtons(),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 40),
-                Expanded(
-                  child: SingleChildScrollView(child: _buildStepContent()),
-                ),
-                _buildNavigationButtons(),
-              ],
-            ),
-          ),
     );
   }
 
@@ -161,23 +315,27 @@ class _PlannerFormScreenState extends State<PlannerFormScreen> {
   }
 
   Widget _buildStepContent() {
-    switch (_currentStep) {
-      case 0:
+    switch (_currentPlannerStep) {
+      case _PlannerStep.name:
         return _buildNameStep();
-      case 1:
-        return _buildSelectionStep('What is your main goal?', _goals, _goal, (val) => setState(() => _goal = val!));
-      case 2:
-        return _buildSelectionStep('Choose your fitness level', _levels, _level, (val) => setState(() => _level = val!));
-      case 3:
-        return _buildSelectionStep('What equipment do you have?', _equipments, _equipment, (val) => setState(() => _equipment = val!));
-      case 4:
-        return _buildSelectionStep('Which area to focus on?', _focusAreas, _focusArea, (val) => setState(() => _focusArea = val!));
-      case 5:
-        return _buildSelectionStep('Any injuries or limitations?', _injuries, _injury, (val) => setState(() => _injury = val!));
-      case 6:
-        return _buildSelectionStep('Time per session?', _times, _timePerSession, (val) => setState(() => _timePerSession = val!));
-      default:
-        return const SizedBox();
+      case _PlannerStep.goal:
+        return _buildSelectionStep('What is your main goal?', _goals, _goal,
+            (val) => setState(() => _goal = val!));
+      case _PlannerStep.experienceLevel:
+        return _buildSelectionStep('Choose your fitness level', _levels, _level,
+            (val) => setState(() => _level = val!));
+      case _PlannerStep.equipment:
+        return _buildSelectionStep('What equipment do you have?', _equipments,
+            _equipment, (val) => setState(() => _equipment = val!));
+      case _PlannerStep.focusArea:
+        return _buildSelectionStep('Which area to focus on?', _focusAreas,
+            _focusArea, (val) => setState(() => _focusArea = val!));
+      case _PlannerStep.timePerSession:
+        return _buildSelectionStep('Time per session?', _times, _timePerSession,
+            (val) => setState(() => _timePerSession = val!));
+      case _PlannerStep.injuries:
+        return _buildSelectionStep('Any injuries or limitations?', _injuries, _injury,
+            (val) => setState(() => _injury = val!));
     }
   }
 
@@ -189,6 +347,7 @@ class _PlannerFormScreenState extends State<PlannerFormScreen> {
         const SizedBox(height: 30),
         TextField(
           controller: _nameController,
+          onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
             hintText: 'Enter your name',
             filled: true,
@@ -257,26 +416,14 @@ class _PlannerFormScreenState extends State<PlannerFormScreen> {
           Expanded(
             flex: 2,
             child: ElevatedButton(
-              onPressed: () {
-                if (_currentStep < 6) {
-                  if (_currentStep == 0 && _nameController.text.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please enter your name')),
-                    );
-                    return;
-                  }
-                  setState(() => _currentStep++);
-                } else {
-                  _generatePlan();
-                }
-              },
+              onPressed: _handleNext,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2563EB),
                 foregroundColor: Colors.white,
                 minimumSize: const Size(0, 56),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               ),
-              child: Text(_currentStep < 6 ? 'Next' : 'Generate Plan'),
+              child: Text(_isLastStep ? 'Generate Plan' : 'Next'),
             ),
           ),
         ],
