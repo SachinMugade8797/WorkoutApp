@@ -4,6 +4,8 @@ import '../../services/diet_service.dart';
 import '../../services/storage_service.dart';
 import '../../main.dart';
 
+import 'diet_form_screen.dart';
+
 class DietDashboardScreen extends StatefulWidget {
   const DietDashboardScreen({super.key});
 
@@ -36,24 +38,30 @@ class _DietDashboardScreenState extends State<DietDashboardScreen> with SingleTi
   }
 
   Future<void> _loadData() async {
-    final profileJson = await StorageService.getDietProfile();
-    final planJson = await StorageService.getWeeklyDietPlan();
-    final intake = await StorageService.getWaterIntake();
-    final goal = await StorageService.getWaterGoal();
+    try {
+      final profileJson = await StorageService.getDietProfile();
+      final planJson = await StorageService.getWeeklyDietPlan();
+      final intake = await StorageService.getWaterIntake();
+      final goal = await StorageService.getWaterGoal();
 
-    if (profileJson != null && planJson != null) {
-      final profile = DietProfile.fromJson(profileJson);
-      final Map<String, dynamic> decodedPlan = planJson;
-      final weeklyPlan = decodedPlan.map((k, v) => MapEntry(k, DailyDietPlan.fromJson(v)));
+      if (profileJson != null && planJson != null) {
+        final profile = DietProfile.fromJson(profileJson);
+        final Map<String, dynamic> decodedPlan = planJson;
+        final weeklyPlan = decodedPlan.map((k, v) => MapEntry(k, DailyDietPlan.fromJson(v)));
 
-      setState(() {
-        _profile = profile;
-        _weeklyPlan = weeklyPlan;
-        _nutrition = DietService.calculateNutrition(profile);
-        _waterIntake = intake;
-        _waterGoal = goal;
-        _isLoading = false;
-      });
+        setState(() {
+          _profile = profile;
+          _weeklyPlan = weeklyPlan;
+          _nutrition = DietService.calculateNutrition(profile);
+          _waterIntake = intake;
+          _waterGoal = goal;
+          _isLoading = false;
+        });
+      } else {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -106,6 +114,56 @@ class _DietDashboardScreenState extends State<DietDashboardScreen> with SingleTi
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_profile == null || _weeklyPlan == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: const Text('Diet Plan', style: TextStyle(fontWeight: FontWeight.w900)),
+          centerTitle: true,
+          backgroundColor: Colors.white,
+          elevation: 0,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.restaurant_menu, size: 72, color: Color(0xFF2563EB)),
+                const SizedBox(height: 20),
+                const Text(
+                  'No Diet Plan Found',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Create a personalized 7-day diet plan to get started.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DietFormScreen(onComplete: _loadData),
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(0, 50),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  ),
+                  child: const Text('Create Diet Plan', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     return Scaffold(

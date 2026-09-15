@@ -12,7 +12,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _userName = 'User';
   String _userGoal = 'Fitness';
   bool _isMetric = true;
-  bool _isDarkMode = false;
   bool _isReminderOn = true;
   bool _isLoading = true;
 
@@ -27,7 +26,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final name = await StorageService.getUserName();
     final goal = await StorageService.getUserGoal();
     final metric = await StorageService.getMetricUnit();
-    final dark = await StorageService.getDarkMode();
     final reminder = await StorageService.getReminder();
 
     if (mounted) {
@@ -35,7 +33,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _userName = name ?? 'User';
         _userGoal = goal ?? 'Fitness';
         _isMetric = metric;
-        _isDarkMode = dark;
         _isReminderOn = reminder;
         _isLoading = false;
       });
@@ -284,16 +281,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: (val) async {
               await StorageService.saveMetricUnit(val);
               setState(() => _isMetric = val);
-            },
-          ),
-          SwitchListTile(
-            activeThumbColor: primaryColor,
-            secondary: const Icon(Icons.dark_mode_outlined, color: primaryColor),
-            title: const Text('Dark Mode'),
-            value: _isDarkMode,
-            onChanged: (val) async {
-              await StorageService.saveDarkMode(val);
-              setState(() => _isDarkMode = val);
             },
           ),
           SwitchListTile(

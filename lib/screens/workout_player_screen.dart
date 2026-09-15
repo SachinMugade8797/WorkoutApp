@@ -146,6 +146,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     _calculateCalsForFinishedExercise();
     await StorageService.saveCurrentWorkoutIndex(_currentIndex);
     await StorageService.saveWorkoutProgress(_totalSessionCalories, (_secondsElapsed / 60).round());
+    await StorageService.updateStreak();
     await StorageService.setIsWorkoutActive(true);
     
     if (mounted) {

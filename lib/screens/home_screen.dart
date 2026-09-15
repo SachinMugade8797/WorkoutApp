@@ -20,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _todayIndex = -1;
   List<String> _completedDates = [];
   bool _hasMissedWorkout = false;
-  
+
   // New dynamic fields
   Map<String, List<String>>? _weeklyPlan;
   String _userGoal = "Fitness";
@@ -104,7 +104,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -114,22 +113,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 30),
-
               _buildWeekGoalSection(),
               const SizedBox(height: 30),
-
               const Text(
-                '7x4 CHALLENGE',
+                'YOUR CHALLENGES',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
                 ),
               ),
               const SizedBox(height: 15),
-
               _buildChallengeCard(context),
               const SizedBox(height: 40),
-
               Text(
                 _weeklyPlan == null ? 'AI RECOMMENDATION' : 'YOUR JOURNEY',
                 style: const TextStyle(
@@ -138,7 +133,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 15),
-
               InkWell(
                 onTap: () => _handlePersonalizedPlanClick(context),
                 child: _buildBeginnerCard(),
@@ -157,13 +151,13 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -182,7 +176,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Text(
                 '${_completedDates.length}/6',
-                style: const TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Color(0xFF2563EB), fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -190,7 +185,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(7, (index) {
-              if (_weekDates.isEmpty) return const SizedBox(width: 35, height: 35);
+              if (_weekDates.isEmpty)
+                return const SizedBox(width: 35, height: 35);
               DateTime date = _weekDates[index];
               String dateStr = date.toIso8601String().split('T')[0];
               bool isCompleted = _completedDates.contains(dateStr);
@@ -200,14 +196,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 35,
                 height: 35,
                 decoration: BoxDecoration(
-                    color: isCompleted ? const Color(0xFF2563EB) : (isToday ? Colors.blue.withValues(alpha: 0.05) : Colors.grey.shade100),
+                  color: isCompleted
+                      ? const Color(0xFF2563EB)
+                      : (isToday
+                          ? Colors.blue.withValues(alpha: 0.05)
+                          : Colors.grey.shade100),
                   shape: BoxShape.circle,
-                  border: isToday ? Border.all(color: const Color(0xFF2563EB), width: 1.5) : null,
+                  border: isToday
+                      ? Border.all(color: const Color(0xFF2563EB), width: 1.5)
+                      : null,
                 ),
                 child: Center(
-                  child: isCompleted 
-                    ? const Icon(Icons.check, color: Colors.white, size: 18)
-                    : Text('${date.day}', style: TextStyle(color: isToday ? const Color(0xFF2563EB) : Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 12)),
+                  child: isCompleted
+                      ? const Icon(Icons.check, color: Colors.white, size: 18)
+                      : Text('${date.day}',
+                          style: TextStyle(
+                              color: isToday
+                                  ? const Color(0xFF2563EB)
+                                  : Colors.grey.shade600,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12)),
                 ),
               );
             }),
@@ -237,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(
-                  colors: [Colors.black.withValues(alpha: 0.8), Colors.transparent],
+            colors: [Colors.black.withValues(alpha: 0.8), Colors.transparent],
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
           ),
@@ -254,25 +262,37 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: Text(
                 hasPlan ? 'ACTIVE PLAN' : 'AI GENERATED',
-                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 10),
             Text(
               hasPlan ? 'Today: $_userGoal' : 'Personalized AI Plan',
-              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 5),
             Text(
-              hasPlan 
-                ? (todayExercises == null || todayExercises.isEmpty ? 'REST DAY' : '${todayExercises.length} TARGETED EXERCISES')
-                : 'CREATE YOUR AI PLAN',
-              style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
+              hasPlan
+                  ? (todayExercises == null || todayExercises.isEmpty
+                      ? 'REST DAY'
+                      : '${todayExercises.length} TARGETED EXERCISES')
+                  : 'CREATE YOUR AI PLAN',
+              style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold),
             ),
             if (!hasPlan)
               const Padding(
                 padding: EdgeInsets.only(top: 10),
-                child: Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+                child: Icon(Icons.arrow_forward_rounded,
+                    color: Colors.white, size: 20),
               ),
           ],
         ),
@@ -283,8 +303,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildStatItem(String value, String label) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-        Text(label, style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+        Text(value,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+        Text(label,
+            style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.bold)),
       ],
     );
   }
@@ -294,8 +319,8 @@ class _HomeScreenState extends State<HomeScreen> {
       width: double.infinity,
       height: 220,
       decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(25),
-            gradient: const LinearGradient(
+        borderRadius: BorderRadius.circular(25),
+        gradient: const LinearGradient(
           colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -308,21 +333,34 @@ class _HomeScreenState extends State<HomeScreen> {
             top: 0,
             bottom: 0,
             width: 160,
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(topRight: Radius.circular(25), bottomRight: Radius.circular(25)),
-                    child: Image.asset('assets/images/body_challenge.png', fit: BoxFit.cover, errorBuilder: (c, e, s) => const SizedBox()),
-                  ),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(25),
+                  bottomRight: Radius.circular(25)),
+              child: Image.asset('assets/images/body_challenge.png',
+                  fit: BoxFit.cover,
+                  errorBuilder: (c, e, s) => const SizedBox()),
+            ),
           ),
           const Padding(
             padding: EdgeInsets.all(25),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('FULL BODY 7x4\nCHALLENGE', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
+                Text(' FULL BODY \nCHALLENGE',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900)),
                 SizedBox(height: 10),
-                Text('Start your journey to fitness', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text('Start your journey to fitness',
+                    style: TextStyle(color: Colors.white70, fontSize: 14)),
                 Spacer(),
-                Text('DAY 1', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
+                Text('DAY 1',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900)),
               ],
             ),
           ),
@@ -336,11 +374,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   final ids = await StorageService.getActiveWorkoutIds();
                   final index = await StorageService.getCurrentWorkoutIndex();
                   if (!context.mounted) return;
-                  await Navigator.push(context, MaterialPageRoute(builder: (_) => WorkoutPlayerScreen(exerciseIds: ids, startIndex: index)));
+                  await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => WorkoutPlayerScreen(
+                              exerciseIds: ids, startIndex: index)));
                   _refreshData();
                 } else {
                   if (!context.mounted) return;
-                  await Navigator.push(context, MaterialPageRoute(builder: (_) => const WorkoutGeneratorForm()));
+                  await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const WorkoutGeneratorForm()));
                   _refreshData();
                 }
               },
@@ -349,9 +394,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 foregroundColor: const Color(0xFF2563EB),
                 elevation: 0,
                 minimumSize: const Size(0, 44),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(22)),
               ),
-              child: Text(_hasMissedWorkout ? 'RESUME WORKOUT' : 'START', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+              child: Text(_hasMissedWorkout ? 'RESUME WORKOUT' : 'START',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w900, fontSize: 15)),
             ),
           ),
         ],
