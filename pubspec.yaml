@@ -29,3 +29,4 @@ flutter:
     - assets/images/
     - assets/images/men.jpg
     - assets/images/women.jpg
+    - assets/exercises.json

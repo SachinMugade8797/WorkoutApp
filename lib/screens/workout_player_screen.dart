@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/exercise_model.dart';
 import '../services/storage_service.dart';
+import '../services/exercise_data_service.dart';
 
 class WorkoutPlayerScreen extends StatefulWidget {
   final List<String> exerciseIds;
@@ -36,8 +37,8 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     super.initState();
     _currentIndex = widget.startIndex;
     _exercises = widget.exerciseIds
-        .map((id) => masterExerciseList.firstWhere((e) => e.id == id,
-            orElse: () => masterExerciseList.first))
+        .map((id) => ExerciseDataService.exercises.firstWhere((e) => e.id == id,
+            orElse: () => ExerciseDataService.exercises.first))
         .toList();
     _loadUserLevel();
     _startTimer();

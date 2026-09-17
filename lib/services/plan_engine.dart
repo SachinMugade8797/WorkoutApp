@@ -1,4 +1,5 @@
 import '../models/exercise_model.dart';
+import 'exercise_data_service.dart';
 import 'dart:math';
 
 class PlanEngine {
@@ -31,7 +32,7 @@ class PlanEngine {
       }
 
       // 1. Filter exercises based on equipment
-      List<WorkoutExercise> availableExercises = masterExerciseList.where((ex) {
+      List<WorkoutExercise> availableExercises = ExerciseDataService.exercises.where((ex) {
         if (equipment == 'None') return ex.equipment == 'None';
         if (equipment == 'Dumbbells Only') return ex.equipment == 'None' || ex.equipment == 'Dumbbells' || ex.equipment == 'Chair/Bench';
         return true; // Full Gym

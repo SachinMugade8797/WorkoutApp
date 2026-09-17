@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/exercise_model.dart';
 import '../services/storage_service.dart';
+import '../services/exercise_data_service.dart';
 import 'planner_form_screen.dart';
 import 'workout_player_screen.dart';
 
@@ -47,9 +47,9 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
   }
 
   void _showDayDetails(String day, List<String> ids) {
-    final exercises = ids.map((id) => masterExerciseList.firstWhere(
+    final exercises = ids.map((id) => ExerciseDataService.exercises.firstWhere(
       (e) => e.id == id, 
-      orElse: () => masterExerciseList.first
+      orElse: () => ExerciseDataService.exercises.first
     )).toList();
     
     showModalBottomSheet(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/exercise_model.dart';
+import '../services/exercise_data_service.dart';
 
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key});
@@ -19,7 +20,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   List<WorkoutExercise> _filterExercises(String category) {
-    return masterExerciseList.where((ex) {
+    return ExerciseDataService.exercises.where((ex) {
       final matchesCategory = ex.category == category;
       final matchesSearch = ex.name.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/exercise_model.dart';
 import '../services/storage_service.dart';
+import '../services/exercise_data_service.dart';
 import 'planner_form_screen.dart';
 import 'workout_player_screen.dart';
 
@@ -142,7 +142,7 @@ class _PlannerHomeScreenState extends State<PlannerHomeScreen> {
   }
 
   Widget _buildDayCard(String day, List<String> exerciseIds) {
-    final exercises = exerciseIds.map((id) => masterExerciseList.firstWhere((e) => e.id == id)).toList();
+    final exercises = exerciseIds.map((id) => ExerciseDataService.exercises.firstWhere((e) => e.id == id)).toList();
     
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
