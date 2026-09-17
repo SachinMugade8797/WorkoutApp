@@ -19,9 +19,35 @@ class UserProfileRepository {
 
   static const int _dbVersion = 1;
 
+  /// Profile seeded on first launch. Replaces the values the old onboarding
+  /// flow used to collect, so the app can open straight on the Training tab
+  /// with a usable profile. Users can still refine these via the AI planner.
+  static const UserProfile defaultProfile = UserProfile(
+    name: 'Athlete',
+    age: 25,
+    gender: 'Male',
+    height: 175.0,
+    weight: 70.0,
+    goal: 'Build Muscle',
+    experienceLevel: 'Beginner',
+    equipment: 'None',
+    workoutLocation: 'Home',
+    timePerSession: '30 mins',
+    injuries: <String>[],
+  );
+
   // ---------------------------------------------------------------------------
   // Database open + schema
   // ---------------------------------------------------------------------------
+
+  /// Opens the database (creating tables on first run) and makes sure the
+  /// single profile row exists. Call once at app startup.
+  static Future<void> initialize() async {
+    await _getDatabase();
+    if (await getProfile() == null) {
+      await saveProfile(defaultProfile);
+    }
+  }
 
   static Future<Database> _getDatabase() async {
     if (_database != null) return _database!;

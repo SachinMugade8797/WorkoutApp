@@ -129,6 +129,7 @@ class PlanEngine {
       'plan': weeklyPlan,
       'totalBurn': totalWeeklyCalories.round(),
       'userName': name,
+      'goal': goal,
       'generatedAt': DateTime.now().toIso8601String(),
     };
   }

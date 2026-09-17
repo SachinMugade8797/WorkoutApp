@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'screens/onboarding/splash_screen.dart';  // NEW - SplashScreen import
 import 'screens/home_screen.dart';
 import 'screens/discover_screen.dart';
 import 'screens/report_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/diet/diet_planner_screen.dart';
 import 'services/exercise_data_service.dart';
+import 'repositories/user_profile_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SharedPreferences.getInstance();
   await ExerciseDataService.initialize();
+
+  // Create + seed the SQLite database on startup. Wrapped so the app still
+  // boots on platforms where the database file can't be opened.
+  try {
+    await UserProfileRepository.initialize();
+  } catch (_) {
+    // Database unavailable — the app continues with local preferences only.
+  }
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -52,7 +60,7 @@ class WorkoutApp extends StatelessWidget {
           iconTheme: IconThemeData(color: Colors.black),
         ),
       ),
-      home: const SplashScreen(),  // CHANGED: Now starts with SplashScreen
+      home: const MainNavigation(),
     );
   }
 }

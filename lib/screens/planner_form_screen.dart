@@ -269,28 +269,66 @@ class _PlannerFormScreenState extends State<PlannerFormScreen> {
         elevation: 0,
         foregroundColor: Colors.black,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)))
-          : _isGenerating
-              ? _buildLoadingState()
-              : Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      LinearProgressIndicator(
-                        value: (_currentStep + 1) / _steps.length,
-                        backgroundColor: Colors.grey.shade100,
-                        color: const Color(0xFF2563EB),
-                      ),
-                      const SizedBox(height: 40),
-                      Expanded(
-                        child: SingleChildScrollView(child: _buildStepContent()),
-                      ),
-                      _buildNavigationButtons(),
-                    ],
-                  ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+          child: CircularProgressIndicator(color: Color(0xFF2563EB)));
+    }
+    if (_isGenerating) {
+      return _buildLoadingState();
+    }
+    // Profile is complete, so there are no questions to ask — the plan is
+    // generated directly. If we land here, generation failed, so offer a retry
+    // instead of building the step UI against an empty step list.
+    if (_steps.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Could not create your plan.',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _generatePlan,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(0, 56),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15)),
                 ),
+                child: const Text('Try Again'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LinearProgressIndicator(
+            value: (_currentStep + 1) / _steps.length,
+            backgroundColor: Colors.grey.shade100,
+            color: const Color(0xFF2563EB),
+          ),
+          const SizedBox(height: 40),
+          Expanded(
+            child: SingleChildScrollView(child: _buildStepContent()),
+          ),
+          _buildNavigationButtons(),
+        ],
+      ),
     );
   }
 
