@@ -227,7 +227,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Manage My Data', style: TextStyle(fontWeight: FontWeight.bold)),
         content: const Text(
-          'Delete all locally stored data: your profile, workout plan, progress, streaks and diet data. This cannot be undone.',
+          'Delete all locally stored data: your profile, workout plan, progress and streaks. This cannot be undone.',
           style: TextStyle(height: 1.5),
         ),
         actions: [
@@ -419,7 +419,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.admin_panel_settings_outlined, color: Colors.red),
             title: const Text('Manage My Data', style: TextStyle(color: Colors.red)),
-            subtitle: const Text('Delete profile, plan, progress and diet data'),
+            subtitle: const Text('Delete profile, plan and progress data'),
             onTap: _showManageMyDataDialog,
           ),
 

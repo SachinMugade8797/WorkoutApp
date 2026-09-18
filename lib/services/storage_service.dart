@@ -19,10 +19,6 @@ class StorageService {
   static const String _isMetricKey = 'settings_is_metric';
   static const String _isDarkModeKey = 'settings_is_dark_mode';
   static const String _isReminderOnKey = 'settings_is_reminder_on';
-  static const String _dietProfileKey = 'diet_profile';
-  static const String _weeklyDietPlanKey = 'weekly_diet_plan';
-  static const String _waterIntakeKey = 'water_intake';
-  static const String _waterGoalKey = 'water_goal';
   static const String _onboardingCompleteKey = 'hasCompletedOnboarding';
   static const String _gDriveBackupKey = 'settings_google_drive_backup';
   static const String _subscriptionKey = 'subscription_active';
@@ -235,59 +231,6 @@ class StorageService {
     return prefs.getBool(_isReminderOnKey) ?? true;
   }
 
-  // Diet methods
-  static Future<void> saveDietProfile(Map<String, dynamic> profile) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_dietProfileKey, jsonEncode(profile));
-  }
-
-  static Future<Map<String, dynamic>?> getDietProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_dietProfileKey);
-    if (data == null) return null;
-    return jsonDecode(data);
-  }
-
-  static Future<void> saveWeeklyDietPlan(Map<String, dynamic> plan) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_weeklyDietPlanKey, jsonEncode(plan));
-  }
-
-  static Future<Map<String, dynamic>?> getWeeklyDietPlan() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_weeklyDietPlanKey);
-    if (data == null) return null;
-    return jsonDecode(data);
-  }
-
-  static Future<void> saveWaterIntake(double intake) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_waterIntakeKey, intake);
-  }
-
-  static Future<double> getWaterIntake() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble(_waterIntakeKey) ?? 0.0;
-  }
-
-  static Future<void> saveWaterGoal(double goal) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_waterGoalKey, goal);
-  }
-
-  static Future<double> getWaterGoal() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble(_waterGoalKey) ?? 2.5;
-  }
-
-  static Future<void> clearDietData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_dietProfileKey);
-    await prefs.remove(_weeklyDietPlanKey);
-    await prefs.remove(_waterIntakeKey);
-    await prefs.remove(_waterGoalKey);
-  }
-
   // Onboarding flag
   static Future<bool> getOnboardingComplete() async {
     final prefs = await SharedPreferences.getInstance();
@@ -331,7 +274,6 @@ class StorageService {
   static Future<void> clearAllUserData() async {
     await clearAllProgress();
     await clearPlan();
-    await clearDietData();
     await clearMissedExercises();
   }
 }

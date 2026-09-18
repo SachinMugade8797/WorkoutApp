@@ -5,7 +5,6 @@ import 'screens/home_screen.dart';
 import 'screens/discover_screen.dart';
 import 'screens/report_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/diet/diet_planner_screen.dart';
 import 'services/exercise_data_service.dart';
 import 'repositories/user_profile_repository.dart';
 
@@ -79,7 +78,6 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _screens = const [
     HomeScreen(),
     DiscoverScreen(),
-    DietPlannerScreen(),
     ReportScreen(),
     SettingsScreen(),
   ];
@@ -118,11 +116,6 @@ class _MainNavigationState extends State<MainNavigation> {
               icon: Icon(Icons.explore_outlined),
               activeIcon: Icon(Icons.explore),
               label: 'Discover',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_menu_outlined),
-              activeIcon: Icon(Icons.restaurant_menu),
-              label: 'Diet',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.bar_chart_outlined),
