@@ -114,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 20),
               _buildWeekProgressStrip(),
               const SizedBox(height: 24),
-              _buildChallengeCard(context),
+              _buildChallengeCardsSection(context),
               const SizedBox(height: 20),
             ],
           ),
@@ -470,14 +470,67 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildChallengeCard(BuildContext context) {
+  Widget _buildChallengeCardsSection(BuildContext context) {
+    return Column(
+      children: [
+        _buildChallengeCard(
+          title: 'STRETCH & MOBILITY',
+          tagline: 'Loosen up, improve flexibility & recover faster',
+          colors: const [Color(0xFF0EA5E9), Color(0xFF0369A1)],
+        ),
+        _buildChallengeCard(
+          title: 'FULL BODY 7x4',
+          tagline: 'Start your journey to fitness',
+          colors: const [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+          onPressed: () async {
+            if (_hasMissedWorkout) {
+              final ids = await StorageService.getActiveWorkoutIds();
+              final index = await StorageService.getCurrentWorkoutIndex();
+              if (!context.mounted) return;
+              await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => WorkoutPlayerScreen(
+                          exerciseIds: ids, startIndex: index)));
+              _refreshData();
+            } else {
+              if (!context.mounted) return;
+              await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const WorkoutGeneratorForm()));
+              _refreshData();
+            }
+          },
+        ),
+        _buildChallengeCard(
+          title: 'Legs',
+          tagline: 'Total body conditioning for all-round power',
+          colors: const [Color(0xFF10B981), Color(0xFF047857)],
+        ),
+        _buildChallengeCard(
+          title: 'ARM SCULPT',
+          tagline: 'Sculpt stronger biceps, triceps & shoulders',
+          colors: const [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChallengeCard({
+    required String title,
+    required String tagline,
+    required List<Color> colors,
+    VoidCallback? onPressed,
+  }) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+        gradient: LinearGradient(
+          colors: colors,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -488,8 +541,8 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('FULL BODY 7x4',
-                    style: TextStyle(
+                Text(title,
+                    style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w900)),
@@ -500,46 +553,44 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontSize: 16,
                         fontWeight: FontWeight.w900)),
                 const SizedBox(height: 6),
-                Text('Start your journey to fitness',
+                Text(tagline,
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 11)),
               ],
             ),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              if (_hasMissedWorkout) {
-                final ids = await StorageService.getActiveWorkoutIds();
-                final index = await StorageService.getCurrentWorkoutIndex();
-                if (!context.mounted) return;
-                await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => WorkoutPlayerScreen(
-                            exerciseIds: ids, startIndex: index)));
-                _refreshData();
-              } else {
-                if (!context.mounted) return;
-                await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const WorkoutGeneratorForm()));
-                _refreshData();
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF2563EB),
-              elevation: 0,
-              minimumSize: const Size(0, 42),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(21)),
+          if (onPressed != null)
+            ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: colors.first,
+                elevation: 0,
+                minimumSize: const Size(0, 42),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(21)),
+              ),
+              child: Text(
+                  _hasMissedWorkout && title == 'FULL BODY 7x4'
+                      ? 'RESUME'
+                      : 'START',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w900, fontSize: 14)),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(21),
+              ),
+              child: const Text('COMING SOON',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 11)),
             ),
-            child: Text(_hasMissedWorkout ? 'RESUME' : 'START',
-                style:
-                    const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
-          ),
         ],
       ),
     );
