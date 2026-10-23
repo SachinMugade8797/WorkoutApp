@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/exercise_model.dart';
 import '../services/storage_service.dart';
+import '../services/exercise_data_service.dart';
 import 'planner_form_screen.dart';
 import 'workout_player_screen.dart';
+import 'report_screen.dart';
 
 class PersonalizedDashboardScreen extends StatefulWidget {
   const PersonalizedDashboardScreen({super.key});
@@ -23,33 +24,41 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
   @override
   void initState() {
     super.initState();
+    // Streak, total calories and weekly burn all come from the same DB
+    // summary as the report, so the two always show identical figures.
+    ReportScreen.progressChanges.addListener(_loadData);
     _loadData();
   }
 
+  @override
+  void dispose() {
+    ReportScreen.progressChanges.removeListener(_loadData);
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
     final plan = await StorageService.getPlan();
     final name = await StorageService.getUserName();
     final goal = await StorageService.getUserGoal();
-    final streak = await StorageService.getStreak();
-    final calories = await StorageService.getTotalCalories();
-    final weeklyBurn = await StorageService.getWeeklyBurn();
-    
+    final progress = await ReportScreen.loadSummary();
+    if (!mounted) return;
     setState(() {
       _weeklyPlan = plan;
       _userName = name ?? 'User';
       _userGoal = goal ?? 'Fitness';
-      _streak = streak;
-      _totalCalories = calories;
-      _weeklyBurn = weeklyBurn;
+      _streak = progress.streak;
+      _totalCalories = progress.calories;
+      _weeklyBurn = progress.weeklyCalories.values
+          .fold(0, (sum, value) => sum + value);
       _isLoading = false;
     });
   }
 
   void _showDayDetails(String day, List<String> ids) {
-    final exercises = ids.map((id) => masterExerciseList.firstWhere(
+    final exercises = ids.map((id) => ExerciseDataService.exercises.firstWhere(
       (e) => e.id == id, 
-      orElse: () => masterExerciseList.first
+      orElse: () => ExerciseDataService.exercises.first
     )).toList();
     
     showModalBottomSheet(
@@ -85,7 +94,7 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB).withOpacity(0.1),
+                        color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(Icons.fitness_center, color: Color(0xFF2563EB)),
@@ -169,9 +178,9 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.green.withOpacity(0.2)),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
@@ -216,15 +225,15 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(val, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color)),
-          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color.withOpacity(0.7))),
+          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color.withValues(alpha: 0.7))),
         ],
       ),
     );
@@ -255,7 +264,7 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2563EB).withOpacity(0.3),
+            color: const Color(0xFF2563EB).withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -330,9 +339,9 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: isToday ? const Color(0xFF2563EB).withOpacity(0.05) : Colors.grey.shade50,
+        color: isToday ? const Color(0xFF2563EB).withValues(alpha: 0.05) : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(15),
-        border: isToday ? Border.all(color: const Color(0xFF2563EB).withOpacity(0.3)) : null,
+        border: isToday ? Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.3)) : null,
       ),
       child: ListTile(
         title: Text(day, style: TextStyle(fontWeight: FontWeight.bold, color: isToday ? const Color(0xFF2563EB) : Colors.black)),

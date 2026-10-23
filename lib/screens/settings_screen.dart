@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../repositories/user_profile_repository.dart';
 import '../services/storage_service.dart';
+import 'report_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -12,8 +14,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _userName = 'User';
   String _userGoal = 'Fitness';
   bool _isMetric = true;
-  bool _isDarkMode = false;
   bool _isReminderOn = true;
+  bool _isGDriveBackup = false;
+  bool _isSubscribed = false;
   bool _isLoading = true;
 
   @override
@@ -27,16 +30,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final name = await StorageService.getUserName();
     final goal = await StorageService.getUserGoal();
     final metric = await StorageService.getMetricUnit();
-    final dark = await StorageService.getDarkMode();
     final reminder = await StorageService.getReminder();
+    final gDrive = await StorageService.getGoogleDriveBackup();
+    final subscribed = await StorageService.isSubscribed();
 
     if (mounted) {
       setState(() {
         _userName = name ?? 'User';
         _userGoal = goal ?? 'Fitness';
         _isMetric = metric;
-        _isDarkMode = dark;
         _isReminderOn = reminder;
+        _isGDriveBackup = gDrive;
+        _isSubscribed = subscribed;
         _isLoading = false;
       });
     }
@@ -72,7 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Text('Your Goal', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: goals.contains(tempGoal) ? tempGoal : goals.first,
+                  initialValue: goals.contains(tempGoal) ? tempGoal : goals.first,
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.grey.shade100,
@@ -89,6 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ElevatedButton(
               onPressed: () async {
                 await StorageService.saveUserProfile(nameController.text, tempGoal);
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 _loadSettings();
               },
@@ -201,6 +207,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _onToggleGDriveBackup(bool value) async {
+    setState(() => _isGDriveBackup = value);
+    await StorageService.setGoogleDriveBackup(value);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Google Drive backup coming soon. Your data stays on this device for now.')),
+    );
+  }
+
+  void _onCloudSyncTap() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Cloud Sync is a Pro feature — coming soon.')),
+    );
+  }
+
+  void _showManageMyDataDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Manage My Data', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Delete all locally stored data: your profile, workout plan, progress and streaks. This cannot be undone.',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await UserProfileRepository.deleteProfile();
+              await StorageService.clearAllUserData();
+              await ReportDataSource.clearHistory();
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('All your data has been deleted')),
+              );
+              _loadSettings();
+            },
+            child: const Text('DELETE', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF2563EB);
@@ -227,7 +278,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withOpacity(0.3),
+                    color: primaryColor.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -251,7 +302,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         Text(
                           'Goal: $_userGoal',
-                          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
                         ),
                       ],
                     ),
@@ -276,7 +327,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           _buildSectionHeader('Preferences'),
           SwitchListTile(
-            activeColor: primaryColor,
+            activeThumbColor: primaryColor,
             secondary: const Icon(Icons.straighten, color: primaryColor),
             title: const Text('Metric Units (kg/cm)'),
             value: _isMetric,
@@ -286,17 +337,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           SwitchListTile(
-            activeColor: primaryColor,
-            secondary: const Icon(Icons.dark_mode_outlined, color: primaryColor),
-            title: const Text('Dark Mode'),
-            value: _isDarkMode,
-            onChanged: (val) async {
-              await StorageService.saveDarkMode(val);
-              setState(() => _isDarkMode = val);
-            },
-          ),
-          SwitchListTile(
-            activeColor: primaryColor,
+            activeThumbColor: primaryColor,
             secondary: const Icon(Icons.notifications_none, color: primaryColor),
             title: const Text('Workout Reminders'),
             value: _isReminderOn,
@@ -304,6 +345,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
               await StorageService.saveReminder(val);
               setState(() => _isReminderOn = val);
             },
+          ),
+
+          _buildSectionHeader('Backup & Cloud Sync'),
+          SwitchListTile(
+            activeThumbColor: primaryColor,
+            secondary: const Icon(Icons.cloud_outlined, color: primaryColor),
+            title: const Text('Backup to Google Drive'),
+            subtitle: const Text('Keep a copy of your plan and progress'),
+            value: _isGDriveBackup,
+            onChanged: _onToggleGDriveBackup,
+          ),
+          ListTile(
+            leading: const Icon(Icons.cloud_sync_outlined, color: primaryColor),
+            title: const Text('Cloud Sync'),
+            subtitle: const Text('Back up your data and sync across devices'),
+            trailing: _isSubscribed
+                ? const Icon(Icons.check_circle, color: primaryColor, size: 20)
+                : Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lock_outline, color: primaryColor, size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          'PRO',
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+            onTap: _isSubscribed ? null : _onCloudSyncTap,
           ),
 
           _buildSectionHeader('Data Management'),
@@ -315,9 +397,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'This will clear your current AI-generated plan. You will need to create a new one.',
               () async {
                 await StorageService.clearPlan();
-                if (mounted) {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                }
+                if (!context.mounted) return;
+                Navigator.of(context).popUntil((route) => route.isFirst);
               },
             ),
           ),
@@ -326,15 +407,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Clear Progress Data', style: TextStyle(color: Colors.red)),
             onTap: () => _showResetConfirmation(
               'Clear Progress?',
-              'This will permanently delete your total calories, minutes, and streaks. This cannot be undone.',
+              'This will permanently delete your workout history, total calories, minutes, and streaks. This cannot be undone.',
               () async {
                 await StorageService.clearAllProgress();
+                await ReportDataSource.clearHistory();
                 _loadSettings();
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Progress data cleared')),
                 );
               },
             ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.admin_panel_settings_outlined, color: Colors.red),
+            title: const Text('Manage My Data', style: TextStyle(color: Colors.red)),
+            subtitle: const Text('Delete profile, plan and progress data'),
+            onTap: _showManageMyDataDialog,
           ),
 
           _buildSectionHeader('Support'),

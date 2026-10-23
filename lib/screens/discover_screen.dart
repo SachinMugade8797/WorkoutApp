@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/exercise_model.dart';
+import '../services/exercise_data_service.dart';
 
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key});
@@ -11,6 +12,13 @@ class DiscoverScreen extends StatefulWidget {
 class _DiscoverScreenState extends State<DiscoverScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
+  late Future<List<WorkoutExercise>> _exercisesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _exercisesFuture = ExerciseDataService.initialize();
+  }
 
   @override
   void dispose() {
@@ -19,7 +27,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   List<WorkoutExercise> _filterExercises(String category) {
-    return masterExerciseList.where((ex) {
+    return ExerciseDataService.exercises.where((ex) {
       final matchesCategory = ex.category == category;
       final matchesSearch = ex.name.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
@@ -55,7 +63,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(15),
               child: Image.asset(
-                'assets/gifs/${exercise.id}.gif',
+                exercise.getGifPath('male'),
                 width: double.infinity,
                 height: 250,
                 fit: BoxFit.cover,
@@ -84,7 +92,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withOpacity(0.1),
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -128,63 +136,72 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 5,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          title: const Text('DISCOVER'),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(110),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (val) => setState(() => _searchQuery = val),
-                    decoration: InputDecoration(
-                      hintText: 'Search exercises...',
-                      prefixIcon: const Icon(Icons.search),
-                      filled: true,
-                      fillColor: Colors.grey.shade100,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+    return FutureBuilder<List<WorkoutExercise>>(
+      future: _exercisesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(child: Text('Failed to load exercises')),
+          );
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final categories =
+            snapshot.data!.map((e) => e.category).toSet().toList();
+
+        return DefaultTabController(
+          length: categories.length,
+          child: Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              title: const Text('DISCOVER'),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(110),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (val) => setState(() => _searchQuery = val),
+                        decoration: InputDecoration(
+                          hintText: 'Search exercises...',
+                          prefixIcon: const Icon(Icons.search),
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const TabBar(
-                  isScrollable: true,
-                  indicatorColor: Color(0xFF2563EB),
-                  labelColor: Color(0xFF2563EB),
-                  unselectedLabelColor: Colors.grey,
-                  indicatorWeight: 3,
-                  labelStyle: TextStyle(fontWeight: FontWeight.bold),
-                  tabs: [
-                    Tab(text: 'Chest'),
-                    Tab(text: 'Abs'),
-                    Tab(text: 'Legs'),
-                    Tab(text: 'Arms'),
-                    Tab(text: 'Back'),
+                    TabBar(
+                      isScrollable: true,
+                      indicatorColor: const Color(0xFF2563EB),
+                      labelColor: const Color(0xFF2563EB),
+                      unselectedLabelColor: Colors.grey,
+                      indicatorWeight: 3,
+                      labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                      tabs: categories.map((c) => Tab(text: c)).toList(),
+                    ),
                   ],
                 ),
-              ],
+              ),
+            ),
+            body: TabBarView(
+              children: categories.map((c) => _buildExerciseGrid(c)).toList(),
             ),
           ),
-        ),
-        body: TabBarView(
-          children: [
-            _buildExerciseGrid('Chest'),
-            _buildExerciseGrid('Abs'),
-            _buildExerciseGrid('Legs'),
-            _buildExerciseGrid('Arms'),
-            _buildExerciseGrid('Back'),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -231,7 +248,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   child: ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
                     child: Image.asset(
-                      'assets/gifs/${ex.id}.gif',
+                      ex.getGifPath('male'),
                       width: double.infinity,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(

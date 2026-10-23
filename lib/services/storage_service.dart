@@ -19,10 +19,9 @@ class StorageService {
   static const String _isMetricKey = 'settings_is_metric';
   static const String _isDarkModeKey = 'settings_is_dark_mode';
   static const String _isReminderOnKey = 'settings_is_reminder_on';
-  static const String _dietProfileKey = 'diet_profile';
-  static const String _weeklyDietPlanKey = 'weekly_diet_plan';
-  static const String _waterIntakeKey = 'water_intake';
-  static const String _waterGoalKey = 'water_goal';
+  static const String _onboardingCompleteKey = 'hasCompletedOnboarding';
+  static const String _gDriveBackupKey = 'settings_google_drive_backup';
+  static const String _subscriptionKey = 'subscription_active';
 
   static Future<void> savePlan(Map<String, List<String>> plan, String name, String goal, int weeklyBurn) async {
     final prefs = await SharedPreferences.getInstance();
@@ -61,6 +60,12 @@ class StorageService {
     return decoded.map((key, value) => MapEntry(key, List<String>.from(value)));
   }
 
+  /// Legacy progress writer, kept only so the one-time report backfill can
+  /// still read the totals recorded before progress moved to SQLite.
+  ///
+  /// No screen calls this any more. `workout_history` in `fitforge.db` is the
+  /// only place new progress is written, which is what makes it permanent.
+  @Deprecated('Progress lives in workout_history; only the backfill reads this.')
   static Future<void> saveWorkoutProgress(int calories, int minutes) async {
     final prefs = await SharedPreferences.getInstance();
     final currentCals = prefs.getInt(_caloriesKey) ?? 0;
@@ -82,6 +87,9 @@ class StorageService {
     return prefs.getStringList(_completedDatesKey) ?? [];
   }
 
+  /// Legacy streak writer, superseded by the streak derived from
+  /// `workout_history`. See [saveWorkoutProgress].
+  @Deprecated('Streak is derived from workout_history.')
   static Future<void> updateStreak() async {
     final prefs = await SharedPreferences.getInstance();
     final lastDateStr = prefs.getString(_lastWorkoutDateKey);
@@ -232,56 +240,49 @@ class StorageService {
     return prefs.getBool(_isReminderOnKey) ?? true;
   }
 
-  // Diet methods
-  static Future<void> saveDietProfile(Map<String, dynamic> profile) async {
+  // Onboarding flag
+  static Future<bool> getOnboardingComplete() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_dietProfileKey, jsonEncode(profile));
+    // Fall back to the legacy key used by the old single-screen onboarding,
+    // so users who already onboarded don't get asked again.
+    return prefs.getBool(_onboardingCompleteKey) ??
+        prefs.getBool('isOnboardingComplete') ??
+        false;
   }
 
-  static Future<Map<String, dynamic>?> getDietProfile() async {
+  static Future<void> setOnboardingComplete(bool value) async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_dietProfileKey);
-    if (data == null) return null;
-    return jsonDecode(data);
+    await prefs.setBool(_onboardingCompleteKey, value);
   }
 
-  static Future<void> saveWeeklyDietPlan(Map<String, dynamic> plan) async {
+  // Backup to Google Drive (free tier) — value is persisted, integration is a stub
+  static Future<bool> getGoogleDriveBackup() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_weeklyDietPlanKey, jsonEncode(plan));
+    return prefs.getBool(_gDriveBackupKey) ?? false;
   }
 
-  static Future<Map<String, dynamic>?> getWeeklyDietPlan() async {
+  static Future<void> setGoogleDriveBackup(bool value) async {
     final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString(_weeklyDietPlanKey);
-    if (data == null) return null;
-    return jsonDecode(data);
+    await prefs.setBool(_gDriveBackupKey, value);
   }
 
-  static Future<void> saveWaterIntake(double intake) async {
+  // Cloud Sync subscription check.
+  // STUB: Always returns false until real billing/entitlement logic is added.
+  static Future<bool> isSubscribed() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_waterIntakeKey, intake);
+    return prefs.getBool(_subscriptionKey) ?? false;
   }
 
-  static Future<double> getWaterIntake() async {
+  static Future<void> setSubscribed(bool value) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble(_waterIntakeKey) ?? 0.0;
+    await prefs.setBool(_subscriptionKey, value);
   }
 
-  static Future<void> saveWaterGoal(double goal) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_waterGoalKey, goal);
-  }
-
-  static Future<double> getWaterGoal() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble(_waterGoalKey) ?? 2.5;
-  }
-
-  static Future<void> clearDietData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_dietProfileKey);
-    await prefs.remove(_weeklyDietPlanKey);
-    await prefs.remove(_waterIntakeKey);
-    await prefs.remove(_waterGoalKey);
+  // Clears every piece of locally stored user data (profile lives in the DB
+  // and is cleared separately by UserProfileRepository.deleteProfile()).
+  static Future<void> clearAllUserData() async {
+    await clearAllProgress();
+    await clearPlan();
+    await clearMissedExercises();
   }
 }

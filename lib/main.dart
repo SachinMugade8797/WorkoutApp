@@ -5,11 +5,28 @@ import 'screens/home_screen.dart';
 import 'screens/discover_screen.dart';
 import 'screens/report_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/diet/diet_planner_screen.dart';
+import 'services/exercise_data_service.dart';
+import 'repositories/user_profile_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SharedPreferences.getInstance();
+  await ExerciseDataService.initialize();
+
+  // Create + seed the SQLite database on startup. Wrapped so the app still
+  // boots on platforms where the database file can't be opened.
+  //
+  // The catch is logged rather than silent: a failure here means recorded
+  // workouts are not being persisted, which must not pass unnoticed.
+  try {
+    await UserProfileRepository.initialize();
+    // Carry progress earned before the report used the database into
+    // workout_history, so the Report tab isn't empty on first open.
+    await ReportDataSource.backfillLegacyProgress();
+  } catch (error, stack) {
+    // Database unavailable — the app continues with local preferences only.
+    debugPrint('Startup database init failed: $error\n$stack');
+  }
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -26,7 +43,7 @@ class WorkoutApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Home Workout',
+      title: 'FitForge',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -54,6 +71,7 @@ class WorkoutApp extends StatelessWidget {
   }
 }
 
+// MainNavigation - NO CHANGES NEEDED HERE
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
@@ -64,13 +82,23 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    DiscoverScreen(),
-    DietPlannerScreen(),
-    ReportScreen(),
-    SettingsScreen(),
+  /// Lets a tab react to becoming the visible one. Needed because an
+  /// `IndexedStack` keeps every tab alive, so a tab's `initState` never runs
+  /// again and it is never rebuilt on tab switches.
+  final ValueNotifier<int> _activeTab = ValueNotifier<int>(0);
+
+  late final List<Widget> _screens = [
+    const HomeScreen(),
+    const DiscoverScreen(),
+    ReportScreen(tabIndex: 2, activeTab: _activeTab),
+    const SettingsScreen(),
   ];
+
+  @override
+  void dispose() {
+    _activeTab.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +116,10 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
+          onTap: (index) => setState(() {
+            _currentIndex = index;
+            _activeTab.value = index;
+          }),
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
           selectedItemColor: const Color(0xFF2563EB),
@@ -106,11 +137,6 @@ class _MainNavigationState extends State<MainNavigation> {
               icon: Icon(Icons.explore_outlined),
               activeIcon: Icon(Icons.explore),
               label: 'Discover',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_menu_outlined),
-              activeIcon: Icon(Icons.restaurant_menu),
-              label: 'Diet',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.bar_chart_outlined),

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'workout_player_screen.dart';
 import '../services/storage_service.dart';
@@ -186,7 +185,7 @@ class _WorkoutGeneratorFormState extends State<WorkoutGeneratorForm> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
                   decoration: BoxDecoration(
-                    color: isSelected ? _primaryColor.withOpacity(0.1) : Colors.grey.shade50,
+                    color: isSelected ? _primaryColor.withValues(alpha: 0.1) : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(15),
                     border: Border.all(color: isSelected ? _primaryColor : Colors.grey.shade200, width: 2),
                   ),
