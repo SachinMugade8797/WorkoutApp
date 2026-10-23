@@ -60,6 +60,12 @@ class StorageService {
     return decoded.map((key, value) => MapEntry(key, List<String>.from(value)));
   }
 
+  /// Legacy progress writer, kept only so the one-time report backfill can
+  /// still read the totals recorded before progress moved to SQLite.
+  ///
+  /// No screen calls this any more. `workout_history` in `fitforge.db` is the
+  /// only place new progress is written, which is what makes it permanent.
+  @Deprecated('Progress lives in workout_history; only the backfill reads this.')
   static Future<void> saveWorkoutProgress(int calories, int minutes) async {
     final prefs = await SharedPreferences.getInstance();
     final currentCals = prefs.getInt(_caloriesKey) ?? 0;
@@ -81,6 +87,9 @@ class StorageService {
     return prefs.getStringList(_completedDatesKey) ?? [];
   }
 
+  /// Legacy streak writer, superseded by the streak derived from
+  /// `workout_history`. See [saveWorkoutProgress].
+  @Deprecated('Streak is derived from workout_history.')
   static Future<void> updateStreak() async {
     final prefs = await SharedPreferences.getInstance();
     final lastDateStr = prefs.getString(_lastWorkoutDateKey);

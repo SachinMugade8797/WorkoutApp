@@ -3,6 +3,7 @@ import '../services/storage_service.dart';
 import '../services/exercise_data_service.dart';
 import 'planner_form_screen.dart';
 import 'workout_player_screen.dart';
+import 'report_screen.dart';
 
 class PersonalizedDashboardScreen extends StatefulWidget {
   const PersonalizedDashboardScreen({super.key});
@@ -23,25 +24,33 @@ class _PersonalizedDashboardScreenState extends State<PersonalizedDashboardScree
   @override
   void initState() {
     super.initState();
+    // Streak, total calories and weekly burn all come from the same DB
+    // summary as the report, so the two always show identical figures.
+    ReportScreen.progressChanges.addListener(_loadData);
     _loadData();
   }
 
+  @override
+  void dispose() {
+    ReportScreen.progressChanges.removeListener(_loadData);
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
     final plan = await StorageService.getPlan();
     final name = await StorageService.getUserName();
     final goal = await StorageService.getUserGoal();
-    final streak = await StorageService.getStreak();
-    final calories = await StorageService.getTotalCalories();
-    final weeklyBurn = await StorageService.getWeeklyBurn();
-    
+    final progress = await ReportScreen.loadSummary();
+    if (!mounted) return;
     setState(() {
       _weeklyPlan = plan;
       _userName = name ?? 'User';
       _userGoal = goal ?? 'Fitness';
-      _streak = streak;
-      _totalCalories = calories;
-      _weeklyBurn = weeklyBurn;
+      _streak = progress.streak;
+      _totalCalories = progress.calories;
+      _weeklyBurn = progress.weeklyCalories.values
+          .fold(0, (sum, value) => sum + value);
       _isLoading = false;
     });
   }

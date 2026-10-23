@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../repositories/user_profile_repository.dart';
 import '../services/storage_service.dart';
+import 'report_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -237,6 +238,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.pop(context);
               await UserProfileRepository.deleteProfile();
               await StorageService.clearAllUserData();
+              await ReportDataSource.clearHistory();
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('All your data has been deleted')),
@@ -405,11 +407,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: const Text('Clear Progress Data', style: TextStyle(color: Colors.red)),
             onTap: () => _showResetConfirmation(
               'Clear Progress?',
-              'This will permanently delete your total calories, minutes, and streaks. This cannot be undone.',
+              'This will permanently delete your workout history, total calories, minutes, and streaks. This cannot be undone.',
               () async {
-                StorageService.clearAllProgress();
+                await StorageService.clearAllProgress();
+                await ReportDataSource.clearHistory();
                 _loadSettings();
-                if (!mounted) return;
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Progress data cleared')),
                 );

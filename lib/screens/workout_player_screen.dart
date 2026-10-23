@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/exercise_model.dart';
 import '../services/storage_service.dart';
 import '../services/exercise_data_service.dart';
+import 'report_screen.dart';
 
 class WorkoutPlayerScreen extends StatefulWidget {
   final List<String> exerciseIds;
@@ -109,12 +110,28 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     StorageService.saveCurrentWorkoutIndex(_currentIndex);
   }
 
+  /// Persists the session to SQLite, the app's single source of truth.
+  ///
+  /// Deliberately swallows write errors: losing a stats row is bad, but
+  /// throwing here would strand the user mid-workout with no completion
+  /// dialog and a session that is neither saved nor discarded cleanly.
+  Future<void> _recordProgress(int exerciseCount) async {
+    try {
+      await ReportScreen.recordSession(
+        calories: _totalSessionCalories,
+        minutes: (_secondsElapsed / 60).round(),
+        exerciseCount: exerciseCount,
+      );
+    } catch (error) {
+      debugPrint('Failed to record workout: $error');
+    }
+  }
+
   void _finishWorkout() async {
     _timer?.cancel();
     _restTimer?.cancel();
-    
-    await StorageService.saveWorkoutProgress(_totalSessionCalories, (_secondsElapsed / 60).round());
-    await StorageService.updateStreak();
+
+    await _recordProgress(_currentIndex + 1);
     await StorageService.clearMissedExercises();
 
     if (mounted) {
@@ -146,8 +163,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
   void _stopAndSave() async {
     _calculateCalsForFinishedExercise();
     await StorageService.saveCurrentWorkoutIndex(_currentIndex);
-    await StorageService.saveWorkoutProgress(_totalSessionCalories, (_secondsElapsed / 60).round());
-    await StorageService.updateStreak();
+    await _recordProgress(_currentIndex);
     await StorageService.setIsWorkoutActive(true);
     
     if (mounted) {

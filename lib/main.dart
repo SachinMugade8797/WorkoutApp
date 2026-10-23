@@ -15,10 +15,17 @@ void main() async {
 
   // Create + seed the SQLite database on startup. Wrapped so the app still
   // boots on platforms where the database file can't be opened.
+  //
+  // The catch is logged rather than silent: a failure here means recorded
+  // workouts are not being persisted, which must not pass unnoticed.
   try {
     await UserProfileRepository.initialize();
-  } catch (_) {
+    // Carry progress earned before the report used the database into
+    // workout_history, so the Report tab isn't empty on first open.
+    await ReportDataSource.backfillLegacyProgress();
+  } catch (error, stack) {
     // Database unavailable — the app continues with local preferences only.
+    debugPrint('Startup database init failed: $error\n$stack');
   }
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -75,12 +82,23 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    DiscoverScreen(),
-    ReportScreen(),
-    SettingsScreen(),
+  /// Lets a tab react to becoming the visible one. Needed because an
+  /// `IndexedStack` keeps every tab alive, so a tab's `initState` never runs
+  /// again and it is never rebuilt on tab switches.
+  final ValueNotifier<int> _activeTab = ValueNotifier<int>(0);
+
+  late final List<Widget> _screens = [
+    const HomeScreen(),
+    const DiscoverScreen(),
+    ReportScreen(tabIndex: 2, activeTab: _activeTab),
+    const SettingsScreen(),
   ];
+
+  @override
+  void dispose() {
+    _activeTab.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +116,10 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
+          onTap: (index) => setState(() {
+            _currentIndex = index;
+            _activeTab.value = index;
+          }),
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
           selectedItemColor: const Color(0xFF2563EB),

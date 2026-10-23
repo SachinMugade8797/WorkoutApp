@@ -14,10 +14,15 @@ import '../models/user_profile.dart';
 ///
 /// The database is opened lazily on first use (not at app startup), so the
 /// app still boots fine on platforms where the database file can't be opened.
+///
+/// Durability: `fitforge.db` is only ever written to. Nothing in the app drops,
+/// truncates or recreates it, so recorded workouts survive app restarts, OS
+/// updates and reinstall-over-adb. The data is removed only when the user asks
+/// for it in Settings ("Clear Progress Data") or by uninstalling the app.
 class UserProfileRepository {
   static Database? _database;
 
-  static const int _dbVersion = 1;
+  static const int _dbVersion = 2;
 
   /// Profile seeded on first launch. Replaces the values the old onboarding
   /// flow used to collect, so the app can open straight on the Training tab
@@ -43,17 +48,26 @@ class UserProfileRepository {
   /// Opens the database (creating tables on first run) and makes sure the
   /// single profile row exists. Call once at app startup.
   static Future<void> initialize() async {
-    await _getDatabase();
+    await getDatabase();
     if (await getProfile() == null) {
       await saveProfile(defaultProfile);
     }
   }
 
-  static Future<Database> _getDatabase() async {
+  /// Opens (once) and returns the shared database handle.
+  ///
+  /// Public so sibling repositories — e.g. [WorkoutHistoryRepository] — reuse
+  /// this exact connection instead of opening a second one on the same file.
+  static Future<Database> getDatabase() async {
     if (_database != null) return _database!;
 
     final path = join(await getDatabasesPath(), 'fitforge.db');
-    _database = await openDatabase(path, version: _dbVersion, onCreate: _onCreate);
+    _database = await openDatabase(
+      path,
+      version: _dbVersion,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
     return _database!;
   }
 
@@ -108,6 +122,25 @@ class UserProfileRepository {
         expires_at TEXT
       )
     ''');
+
+    // Created here as well as in _onUpgrade: _onUpgrade only runs when an
+    // existing v1 database is migrated, so fresh installs would otherwise
+    // never get the index.
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_workout_history_date ON workout_history(date)',
+    );
+  }
+
+  /// v1 -> v2: the report screen started reading from `workout_history`, and
+  /// every query it runs filters or groups by `date`. Indexing that column
+  /// keeps the report fast as the history table grows. No columns change, so
+  /// existing rows are left untouched.
+  static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_workout_history_date ON workout_history(date)',
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -115,14 +148,14 @@ class UserProfileRepository {
   // ---------------------------------------------------------------------------
 
   static Future<UserProfile?> getProfile() async {
-    final db = await _getDatabase();
+    final db = await getDatabase();
     final rows = await db.query('user_profile', where: 'id = 1', limit: 1);
     if (rows.isEmpty) return null;
     return UserProfile.fromDbMap(rows.first);
   }
 
   static Future<void> saveProfile(UserProfile profile) async {
-    final db = await _getDatabase();
+    final db = await getDatabase();
     // conflictAlgorithm.replace = insert-or-update the single id=1 row.
     await db.insert(
       'user_profile',
@@ -136,7 +169,7 @@ class UserProfileRepository {
   /// If no profile row exists yet, one is created first so the update works
   /// for the very first onboarding step.
   static Future<void> updateField(String key, dynamic value) async {
-    final db = await _getDatabase();
+    final db = await getDatabase();
     await _ensureProfileRow(db);
 
     final column = _fieldToColumn(key);
@@ -165,7 +198,7 @@ class UserProfileRepository {
 
   /// Deletes the local profile row (used by "Manage my data").
   static Future<void> deleteProfile() async {
-    final db = await _getDatabase();
+    final db = await getDatabase();
     await db.delete('user_profile', where: 'id = 1');
   }
 

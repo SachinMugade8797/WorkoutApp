@@ -3,6 +3,7 @@ import 'workout_generator_form.dart';
 import 'planner_form_screen.dart';
 import 'personalized_dashboard_screen.dart';
 import 'workout_player_screen.dart';
+import 'report_screen.dart';
 import '../services/storage_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,6 +22,9 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> _completedDates = [];
   bool _hasMissedWorkout = false;
 
+  /// Trained days in the current Mon-Sun week, used by the week goal strip.
+  int _weeklyCompleted = 0;
+
   // New dynamic fields
   Map<String, List<String>>? _weeklyPlan;
   String _userGoal = "Fitness";
@@ -28,30 +32,43 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Progress now lives in SQLite so it is permanent; keep the home stats in
+    // step with the report whenever a session is recorded or cleared.
+    ReportScreen.progressChanges.addListener(_onProgressChanged);
     _refreshData();
     _calculateWeekDates();
   }
 
+  @override
+  void dispose() {
+    ReportScreen.progressChanges.removeListener(_onProgressChanged);
+    super.dispose();
+  }
+
+  void _onProgressChanged() {
+    if (mounted) _refreshData();
+  }
+
   Future<void> _refreshData() async {
-    final streak = await StorageService.getStreak();
-    final kcal = await StorageService.getTotalCalories();
-    final mins = await StorageService.getTotalMinutes();
-    final completed = await StorageService.getCompletedDates();
+    // Streak, calories, minutes and the trained-day list all come from the one
+    // DB summary, so home and report can never show different numbers.
+    final progress = await ReportScreen.loadSummary();
+
     final isActive = await StorageService.isWorkoutActive();
     final plan = await StorageService.getPlan();
     final goal = await StorageService.getUserGoal();
 
-    if (mounted) {
-      setState(() {
-        _streak = streak;
-        _totalKcal = kcal;
-        _totalMinutes = mins;
-        _completedDates = completed;
-        _hasMissedWorkout = isActive;
-        _weeklyPlan = plan;
-        _userGoal = goal ?? "Fitness";
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _streak = progress.streak;
+      _totalKcal = progress.calories;
+      _totalMinutes = progress.minutes;
+      _completedDates = progress.activeDates;
+      _weeklyCompleted = progress.weeklyCompleted;
+      _hasMissedWorkout = isActive;
+      _weeklyPlan = plan;
+      _userGoal = goal ?? "Fitness";
+    });
   }
 
   void _calculateWeekDates() {
@@ -153,7 +170,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               Text(
-                '${_completedDates.length}/6',
+                // Was _completedDates.length, which is the all-time trained-day
+                // count and could read "47/6" against a weekly goal.
+                '$_weeklyCompleted/$kWeeklySessionGoal',
                 style: const TextStyle(
                     color: Color(0xFF2563EB), fontWeight: FontWeight.bold),
               ),
@@ -384,16 +403,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildWeekProgressStrip() {
-    final now = DateTime.now();
-    final monday = now.subtract(Duration(days: now.weekday - 1));
-    final thisWeekDates = List.generate(7, (i) {
-      final d = monday.add(Duration(days: i));
-      return d.toIso8601String().split('T')[0];
-    });
-    final completedThisWeek =
-        _completedDates.where((d) => thisWeekDates.contains(d)).length;
-    const goal = 6;
-    final progress = (completedThisWeek / goal).clamp(0.0, 1.0);
+    // Same DB summary the report uses, so the two always agree.
+    final completedThisWeek = _weeklyCompleted;
+    const goal = kWeeklySessionGoal;
+    final progress = goal == 0 ? 0.0 : (completedThisWeek / goal).clamp(0.0, 1.0);
 
     return Container(
       padding: const EdgeInsets.all(16),
